@@ -6,6 +6,14 @@ on:
   pull_request:
 
 jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: secrets removed later are still found
+      - run: scripts/scan-secrets.sh
+
   web:
     runs-on: ubuntu-latest
     steps:

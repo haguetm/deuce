@@ -1,47 +1,40 @@
-# Checklist juridique
+# Mentions, licences et retrait
 
-Document de travail destiné à un audit par un avocat. Statut : ✅ fait, 🟡 en cours, ⬜ à faire, ⚖️ à valider par un avocat.
+## Projet de fans non officiel
 
-## Monnaie et loot boxes
+Projet de fans non officiel, sans lien avec l'ATP, la WTA, les joueurs ou les tournois. Les noms de tournois et d'institutions apparaissent uniquement en texte factuel. Le jeu n'utilise aucun logo officiel ni aucune image de retransmission.
 
-- ⬜ Aucune route ni dépendance de paiement (vérifié à chaque livraison).
-- ⬜ Les aces se gagnent uniquement en jouant, ne s'achètent pas, ne se convertissent pas.
-- ⚖️ Confirmer que le régime JONUM ne s'applique pas tant qu'aucune valeur monétaire n'entre ni ne sort.
+Le jeu est gratuit : aucun achat, aucune publicité. La monnaie du jeu se gagne uniquement en jouant et n'a aucune valeur monétaire.
 
-## Images de personnes réelles
+## Licences
 
-- ⬜ Uniquement Wikimedia Commons sous licence libre compatible, métadonnées stockées.
-- ⬜ Crédit au dos de chaque carte et sur la fiche.
-- ✅ Champ `hidden`, masquage en un appel (`admin_set_image_hidden`), photo masquée invisible au niveau de la base, action journalisée.
-- ⚖️ Droit à l'image des joueurs : la licence libre ne couvre que le droit d'auteur du photographe.
+| Élément                                                | Licence                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Code source de ce dépôt                                | MIT (voir `LICENSE`)                                                   |
+| Statistiques (Jeff Sackmann, tennis_atp et tennis_wta) | CC BY-NC-SA 4.0                                                        |
+| Extraits de Wikipédia                                  | CC BY-SA 4.0                                                           |
+| Photos (Wikimedia Commons)                             | licence propre à chaque fichier (CC BY, CC BY-SA, CC0, domaine public) |
+| Données Wikidata et pages vues Wikimedia               | CC0 1.0                                                                |
 
-## Marques et contenus officiels
+La licence MIT couvre uniquement le code. Les données et les contenus restent sous leur licence d'origine.
 
-- ✅ Mention « projet de fans non officiel » dans le pied de page de chaque page.
-- ⬜ Aucun logo ATP, WTA, Grand Chelem ou tournoi ; noms en texte brut uniquement.
-- ⚖️ Vérifier le nom « Deuce » en marque (INPI, EUIPO) avant lancement.
+## Attributions
 
-## Licences de contenu
+- **Statistiques** : jeu de données de Jeff Sackmann, https://github.com/JeffSackmann, licence CC BY-NC-SA 4.0. Attribution dans le pied de page et au dos de chaque carte.
+- **Biographies** : extraits de Wikipédia, auteurs « contributeurs de Wikipédia », lien vers l'article d'origine à côté de chaque extrait.
+- **Photos** : auteur, licence et lien vers le fichier Wikimedia Commons au dos de chaque carte et sur la fiche du joueur.
 
-- ✅ Attribution Sackmann (CC BY-NC-SA 4.0) et Wikipédia (CC BY-SA 4.0) dans le pied de page.
-- ⬜ Attribution sur chaque dos de carte et chaque extrait.
-- ⚖️ CC BY-NC-SA : le partage à l'identique s'applique-t-il aux statistiques affichées ? Hypothèse : oui, elles sont republiées sous la même licence.
+Le détail des sources figure dans `docs/DATA.md`.
 
-## RGPD et cookies
+## Demande de retrait
 
-- ✅ Aucun cookie pour les visiteurs anonymes (langue dans l'URL).
-- ⬜ Politique de confidentialité, mentions légales, CGU, page cookies (emplacements éditeur à compléter).
-- ⬜ Export et suppression de compte en libre-service.
-- ✅ Minimisation : `profiles` ne contient que pseudo, langue, date de confirmation d'âge et code de parrainage ; email et identité OAuth restent dans `auth.users`.
-- ✅ Suppression de compte : cascade sur toutes les données de jeu, registre compris.
-- ⚖️ Durée de conservation des demandes de retrait (nom et email du demandeur) et du journal d'audit. Proposition : 3 ans après traitement.
-- ⚖️ Base légale et durée de conservation des journaux (anti-abus, parrainage).
+Toute personne concernée (joueur ou joueuse, représentant, photographe) peut demander le retrait d'une photo ou d'une fiche :
 
-## Mineurs
+- en français : `/fr/retrait`
+- en anglais : `/en/takedown`
 
-- ⬜ Case « 15 ans ou plus, ou accord parental » à l'inscription.
-- ⬜ Aucune messagerie privée au MVP.
+Une photo peut être masquée immédiatement : la carte affiche alors une silhouette. Chaque demande est examinée et chaque action de modération est journalisée.
 
-## Transparence
+## Données personnelles
 
-- ⬜ Page publique des probabilités (par rareté, par slot, par carte).
+Le jeu collecte uniquement l'email, le pseudo et l'identifiant de connexion (Discord, Google ou email). Aucun cookie n'est déposé pour les visiteurs non connectés. L'export et la suppression du compte sont disponibles en libre-service. Les détails figurent dans la politique de confidentialité du site.

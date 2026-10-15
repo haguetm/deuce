@@ -58,5 +58,13 @@ Le test `tests/unit/brand.test.ts` échoue si le nom ou une couleur apparaît en
 ## Documentation
 
 - `docs/DECISIONS.md` : décisions et hypothèses
-- `docs/LEGAL.md` : checklist juridique et points pour l'avocat
+- `docs/LEGAL.md` : mentions, licences, attributions et procédure de retrait
 - `docs/DATA.md` : sources, licences, mise à jour des données
+
+## Licence
+
+Le code est sous licence MIT (`LICENSE`). Les données et contenus importés (statistiques, extraits de Wikipédia, photos de Wikimedia Commons) restent sous leur licence d'origine, détaillée dans `docs/LEGAL.md` et `docs/DATA.md`. Ils ne sont jamais versionnés dans ce dépôt.
+
+## Sécurité
+
+`pnpm scan:secrets` analyse tout l'historique git avec gitleaks et vérifie que `.gitignore` exclut les fichiers `.env*`, les notes privées (`docs/private/`) et les données téléchargées. La CI lance ce scan sur `main` et sur chaque pull request.

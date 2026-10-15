@@ -14,7 +14,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
-    "db:test:plain": "scripts/db/test-plain-postgres.sh"
+    "db:test:plain": "scripts/db/test-plain-postgres.sh",
+    "scan:secrets": "scripts/scan-secrets.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

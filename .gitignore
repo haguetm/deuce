@@ -48,3 +48,18 @@ __pycache__/
 .venv/
 pipeline/.cache/
 pipeline/logs/*.log
+
+# private notes (legal review, internal analysis): never published
+/docs/private/
+
+# downloaded or generated data: never committed (third-party licenses, size)
+/data/
+/pipeline/data/
+/pipeline/downloads/
+**/tennis_atp/
+**/tennis_wta/
+**/tennis_atp-*/
+**/tennis_wta-*/
+
+# local tools (e.g. gitleaks downloaded by scripts/scan-secrets.sh)
+/.cache/
