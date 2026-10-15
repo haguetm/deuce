@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/*
+ * Color values come from config/brand.ts, injected as --brand-* variables on
+ * <html> by the root layout. Never hardcode a hex value here.
+ */
+@theme inline {
+  --color-night: var(--brand-night);
+  --color-ball: var(--brand-ball);
+  --color-gold: var(--brand-gold);
+  --color-cream: var(--brand-cream);
+  --color-emerald: var(--brand-emerald);
+  --font-sans: var(--font-sans-family);
+}
+
+body {
+  background: var(--brand-night);
+  color: var(--brand-cream);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-ball);
+  outline-offset: 2px;
+}

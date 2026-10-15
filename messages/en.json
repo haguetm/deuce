@@ -1,0 +1,39 @@
+{
+  "brand": {
+    "tagline": "Tennis, one card at a time.",
+    "pitch": "Open a free booster every 15 minutes and collect players from the whole history of tennis.",
+    "comingSoon": "First serve planned before the 2027 Australian Open."
+  },
+  "nav": {
+    "home": "Home",
+    "language": "Language",
+    "switchTo": "Français"
+  },
+  "home": {
+    "metaTitle": "{name} - collectible tennis cards",
+    "metaDescription": "Free collectible card game about professional tennis players. One booster every 15 minutes.",
+    "joinDiscord": "Join the Discord"
+  },
+  "rarity": {
+    "common": "Ball kid",
+    "uncommon": "Club player",
+    "rare": "Seeded",
+    "epic": "Runner-up",
+    "legendary": "World No. 1",
+    "mythic": "GOAT"
+  },
+  "footer": {
+    "fanProject": "Unofficial fan project, not affiliated with the ATP, the WTA, the players or the tournaments.",
+    "statsCredit": "Stats: Jeff Sackmann's dataset (tennis_atp, tennis_wta), CC BY-NC-SA 4.0 license.",
+    "textCredit": "Bios: excerpts from Wikipedia, CC BY-SA 4.0 license. Photos: Wikimedia Commons, credited on each card.",
+    "free": "Free, no ads, no purchases."
+  },
+  "skip": {
+    "toContent": "Skip to content"
+  },
+  "notFound": {
+    "title": "Foot fault",
+    "body": "This page went out of bounds.",
+    "back": "Back to home"
+  }
+}
