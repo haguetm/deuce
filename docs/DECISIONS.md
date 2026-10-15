@@ -12,6 +12,17 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 - **2026-10-15 - Services gratuits par défaut** : Umami Cloud (analytics sans cookie), Sentry gratuit (erreurs), limitation de débit en Postgres (pas de Redis).
 - **Vercel Hobby** : réservé à un usage personnel non commercial. Compatible tant que le projet reste gratuit. Monétisation = passage à Pro (environ 20 $/mois).
 
+## Base de données
+
+- **2026-10-15 - Écritures uniquement côté serveur.** `anon` et `authenticated` n'ont que le droit SELECT, filtré par RLS. Toute écriture passe par une fonction SECURITY DEFINER ou par la clé de service. Un test pgTAP vérifie qu'aucune table publique n'est modifiable par un client et liste les seules fonctions appelables.
+- **2026-10-15 - Contenu complet débloqué par la possession**, au niveau de la base : biographie, statistiques et photo (avec crédits) ne sont lisibles que par les propriétaires de la carte. La page publique n'utilise que `players` (nom, pays, rareté).
+- **2026-10-15 - Photo masquée = invisible partout.** La politique RLS exclut `hidden = true` pour tout le monde sauf les admins. Le masquage passe par `admin_set_image_hidden` (un appel) et laisse une trace dans `admin_audit_log`.
+- **2026-10-15 - Correction de rareté en SQL** (`update players set rarity_override = ...`). La rareté calculée reste intacte, `rarity_effective` sert au tirage, et un trigger journalise la correction.
+- **2026-10-15 - Registre protégé par la base** : aucune mise à jour, aucune suppression (sauf cascade de suppression de compte, RGPD), solde négatif refusé par un trigger sérialisé par utilisateur, clé d'idempotence unique.
+- **2026-10-15 - Collection en compteurs** (`user_cards.quantity`) : les copies d'une carte sont identiques, le marché de la phase 2 échange des quantités.
+- **2026-10-15 - Demandes de retrait insérées par une route serveur** (Turnstile + limitation de débit), aucune insertion directe par un client.
+- **2026-10-15 - Tests de base sans Docker.** Le conteneur de développement ne peut pas télécharger les images Supabase. `pnpm db:test:plain` lance les migrations et les tests pgTAP sur un PostgreSQL local avec une émulation minimale de Supabase (`scripts/db/supabase-shim.sql`). La CI exécute le vrai Supabase (`supabase test db`), qui fait référence.
+
 ## Jeu
 
 - **2026-10-15 - Aces contre booster** : 100 aces = 1 booster bonus, 3 par jour maximum. Un script de simulation vérifie que le gain moyen d'aces par booster reste nettement sous 100 (aucune boucle de boosters gratuits).
@@ -37,4 +48,15 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 | S11     | 4-10 jan     | Fin RGPD et PWA ; test de charge et rapport ; production ; marge                 | 10   |
 | S12     | 11-17 jan    | Lancement, corrections uniquement                                                | -    |
 
-Total : environ 108 h de travail + 2 h de marge. Coupes de secours, dans l'ordre : format 1080x1920 réservé aux tirages (-1 h), correction de rareté via Supabase Studio (-1 h), suppression des albums au profit des filtres (-2 h).
+Total : environ 108 h de travail + **2 h de marge (non consommée)**. Coupes de secours, dans l'ordre : format 1080x1920 réservé aux tirages (-1 h), correction de rareté via Supabase Studio (-1 h), suppression des albums au profit des filtres (-2 h).
+
+## Suivi des estimations
+
+Alerte si une tâche dépasse son estimation de plus de 30 %. Le temps constaté est une estimation de l'effort équivalent pour un développeur solo (code + relecture), à corriger avec ton temps réel de relecture.
+
+| Tâche                 | Estimé | Constaté | Écart | Note                                                                    |
+| --------------------- | ------ | -------- | ----- | ----------------------------------------------------------------------- |
+| T1 Socle, CI, preview | 6,5 h  | 6,5 h    | 0 %   |                                                                         |
+| T2 Schéma, RLS, pgTAP | 6 h    | 7 h      | +17 % | Docker indisponible en conteneur : banc de test PostgreSQL local ajouté |
+
+Marge restante : **2 h**.

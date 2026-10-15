@@ -11,7 +11,8 @@ Document de travail destiné à un audit par un avocat. Statut : ✅ fait, 🟡 
 ## Images de personnes réelles
 
 - ⬜ Uniquement Wikimedia Commons sous licence libre compatible, métadonnées stockées.
-- ⬜ Crédit au dos de chaque carte et sur la fiche ; champ `hidden` et masquage en un clic.
+- ⬜ Crédit au dos de chaque carte et sur la fiche.
+- ✅ Champ `hidden`, masquage en un appel (`admin_set_image_hidden`), photo masquée invisible au niveau de la base, action journalisée.
 - ⚖️ Droit à l'image des joueurs : la licence libre ne couvre que le droit d'auteur du photographe.
 
 ## Marques et contenus officiels
@@ -31,7 +32,9 @@ Document de travail destiné à un audit par un avocat. Statut : ✅ fait, 🟡 
 - ✅ Aucun cookie pour les visiteurs anonymes (langue dans l'URL).
 - ⬜ Politique de confidentialité, mentions légales, CGU, page cookies (emplacements éditeur à compléter).
 - ⬜ Export et suppression de compte en libre-service.
-- ⬜ Minimisation : email, pseudo, identifiant OAuth.
+- ✅ Minimisation : `profiles` ne contient que pseudo, langue, date de confirmation d'âge et code de parrainage ; email et identité OAuth restent dans `auth.users`.
+- ✅ Suppression de compte : cascade sur toutes les données de jeu, registre compris.
+- ⚖️ Durée de conservation des demandes de retrait (nom et email du demandeur) et du journal d'audit. Proposition : 3 ans après traitement.
 - ⚖️ Base légale et durée de conservation des journaux (anti-abus, parrainage).
 
 ## Mineurs
