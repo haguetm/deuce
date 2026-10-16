@@ -34,7 +34,7 @@ $$, array['is_admin'], 'anon can execute only is_admin()');
 select set_eq($$
   select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'EXECUTE')
-$$, array['is_admin', 'admin_set_image_hidden'],
+$$, array['is_admin', 'admin_set_image_hidden', 'open_booster', 'get_booster_state'],
    'authenticated can execute only the whitelisted functions');
 
 select * from finish();

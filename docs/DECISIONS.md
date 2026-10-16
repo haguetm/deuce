@@ -36,7 +36,11 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 - **2026-10-15 - Aces contre booster** : 100 aces = 1 booster bonus, 3 par jour maximum. Un script de simulation vérifie que le gain moyen d'aces par booster reste nettement sous 100 (aucune boucle de boosters gratuits).
 - **2026-10-15 - Garantie de rareté** : slots 1 à 4 sur la table standard, slot 5 sur la table « Peu commune ou mieux » renormalisée. La page des probabilités affiche le taux par slot et le taux global par booster.
 - **2026-10-15 - Boosters thématiques reportés en phase 2.** Seule l'« édition Open d'Australie » existe au MVP (filtre dans la config). Albums automatiques limités à la nationalité.
-- **Valeurs de recyclage (provisoire)** : définies dans `config/game.ts` (tâche 5), validées par la simulation.
+- **2026-10-16 - Paramètres de jeu dans `config/game.ts`**, copiés dans `public.game_config` par le fichier généré `supabase/seed-game-config.sql` (`pnpm config:generate`). Un test échoue si le fichier généré n'est pas à jour. En production, appliquer ce fichier avec psql après chaque changement.
+- **2026-10-16 - Tirage** : graine de 32 octets générée par le serveur et conservée pour chaque ouverture, tirages dérivés par HMAC-SHA256 (rejouables pour audit). Rareté selon la table, puis carte uniforme dans le tier. Le slot 5 utilise toujours la table « Peu commune ou mieux » renormalisée. Si un tier est vide, l'ouverture échoue au lieu de fausser les taux affichés.
+- **2026-10-16 - Recharge paresseuse** : +1 booster toutes les 15 minutes, calculé à la lecture ; le minuteur ne tourne pas quand le stock est plein. `open_booster` verrouille la ligne `booster_state` du joueur : 6 ouvertures simultanées sur un stock de 1 donnent 1 succès et 5 refus (vérifié en local).
+- **2026-10-16 - Idempotence des ouvertures** : identifiant de requête fourni par le client, unique par joueur ; un rejeu renvoie la première ouverture.
+- **Valeurs de recyclage (provisoire)** : Commune 1, Peu commune 3, Rare 8, Épique 25, Légendaire 80, Mythique 400 aces. Simulation (`pnpm simulate:economy`, catalogue de 4 000 cartes) : environ 1 ace par booster sur les 100 premiers, 12 à 15 entre 100 et 1 000, 30 entre 1 000 et 10 000, plafond théorique 31,7 aces par booster quand toutes les cartes sont des doublons, soit 31,7 % du prix d'un booster en aces. Il faut au moins 3,2 boosters gratuits pour en financer un : aucune boucle de boosters gratuits.
 
 ## Planning phase 1 (11 semaines utiles, absence du 26/12 au 03/01)
 
@@ -67,6 +71,8 @@ Alerte si une tâche dépasse son estimation de plus de 30 %. Le temps constaté
 | T1 Socle, CI, preview | 6,5 h  | 6,5 h    | 0 %   |                                                                         |
 | T2 Schéma, RLS, pgTAP | 6 h    | 7 h      | +17 % | Docker indisponible en conteneur : banc de test PostgreSQL local ajouté |
 
-| T3a Mini-pipeline (200 joueurs) | 5 h | 4 h (code et tests) | en cours | exécution réelle bloquée : domaines Wikimedia refusés par le réseau du conteneur |
+| T3a Mini-pipeline (200 joueurs) | 5 h | 4,5 h (code, tests, débit) | en cours | import réel bloqué : Wikimedia limite l'IP partagée du conteneur |
+| Hors plan : recto public, conservation des données | - | 1,5 h | - | demandes du 16/10, prises sur la marge |
+| T5 Tirage SQL, tests, simulation | 8,5 h | 7 h | -18 % | |
 
-Marge restante : **2 h**.
+Marge restante : **0,5 h** (1,5 h prises par les ajouts hors plan du 16/10).

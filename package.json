@@ -16,7 +16,9 @@
     "db:test": "supabase test db",
     "db:test:plain": "scripts/db/test-plain-postgres.sh",
     "scan:secrets": "scripts/scan-secrets.sh",
-    "settings:sync": "tsx --env-file=.env.local scripts/sync-private-settings.ts"
+    "settings:sync": "tsx --env-file=.env.local scripts/sync-private-settings.ts",
+    "config:generate": "tsx scripts/generate-game-config-seed.ts",
+    "simulate:economy": "tsx scripts/simulate-economy.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
