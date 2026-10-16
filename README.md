@@ -32,6 +32,8 @@ pnpm dev               # http://localhost:3000 -> redirige vers /fr ou /en
 | `pnpm db:seed:dev`                           | charge 100 joueurs fictifs (is_dev_seed) dans la base locale uniquement      |
 | `pnpm db:test:plain`                         | mêmes tests sans Docker, sur un PostgreSQL local avec pgTAP                  |
 
+Aperçu de la révélation sans Supabase : `pnpm dev` puis http://localhost:3000/fr/dev/booster (données fictives).
+
 ## Arborescence
 
 ```

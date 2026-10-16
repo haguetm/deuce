@@ -33,6 +33,10 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 
 - **2026-10-16 - Données de développement fictives** (`pnpm db:seed:dev`) : 100 joueurs aux noms inventés, sans photo, statistiques plausibles, toutes les raretés représentées. Lignes marquées `players.is_dev_seed`. Un trigger refuse ces lignes sauf si la transaction déclare `app.environment = 'development'`, ce que seul le script de dev fait ; le script refuse toute base non locale. Aucune migration ni seed de production ne les contient (testé).
 
+- **2026-10-16 - Connexion (tâche 4a)** : Discord (en premier), Google, lien magique par email, via Supabase Auth et `@supabase/ssr`. Le proxy ne rafraîchit la session que si un cookie Supabase existe : aucun cookie pour les visiteurs anonymes. L'en-tête lit la session côté navigateur pour que les pages publiques restent statiques et cachables. Case d'âge, Turnstile et pseudo restent pour la tâche 4b.
+- **2026-10-16 - Révélation des boosters (tâche 6)** : le serveur tire et enregistre les 5 cartes avant tout affichage ; le client ne fait que la mise en scène (machine d'état testée). Ordre de révélation par slot, la carte garantie en dernier ; lueur de la couleur de rareté avant de retourner une carte Épique ou mieux ; finition holographique discrète à partir d'Épique ; animations coupées avec `prefers-reduced-motion`. Un identifiant de requête est conservé jusqu'à la réponse du serveur : un nouvel essai après une coupure réseau rejoue la même ouverture.
+- **2026-10-16 - Aperçu de développement** `/fr/dev/booster` : révélation sur joueurs fictifs sans Supabase, désactivé en production (sauf `ENABLE_DEV_PREVIEW=1`).
+
 ## Jeu
 
 - **2026-10-15 - Aces contre booster** : 100 aces = 1 booster bonus, 3 par jour maximum. Un script de simulation vérifie que le gain moyen d'aces par booster reste nettement sous 100 (aucune boucle de boosters gratuits).
@@ -77,5 +81,9 @@ Alerte si une tâche dépasse son estimation de plus de 30 %. Le temps constaté
 | T3a Mini-pipeline (200 joueurs) | 5 h | 4,5 h (code, tests, débit) | en cours | import réel bloqué : Wikimedia limite l'IP partagée du conteneur |
 | Hors plan : recto public, conservation des données | - | 1,5 h | - | demandes du 16/10, prises sur la marge |
 | T5 Tirage SQL, tests, simulation | 8,5 h | 7 h | -18 % | |
+| Hors plan : graine illisible, contrôles docs et économie | - | 1 h | - | demandes du 16/10 |
+| Hors plan : données fictives de dev, scripts d'import bash/PowerShell | - | 1,5 h | - | demandes du 16/10 |
+| T4a Connexion Discord, Google, email | 3 h | 2 h | -33 % | Google avancé depuis T4b |
+| T6 Interface d'ouverture et révélation | 8 h | 6,5 h | -19 % | parcours réel non testé de bout en bout (pas de Supabase dans le conteneur) |
 
-Marge restante : **0,5 h** (1,5 h prises par les ajouts hors plan du 16/10).
+Marge restante : **-1,5 h**. Les ajouts hors plan du 16/10 (4 h) dépassent la marge de 2 h ; les tâches 4a, 5 et 6 ont rendu 4 h sur leurs estimations. Bilan net du planning : +0,5 h d'avance.
