@@ -16,6 +16,7 @@ Variables d'environnement (voir `.env.example` à la racine) :
 |---|---|
 | `PIPELINE_CONTACT` | email ou URL de contact, obligatoire dans le User-Agent (politique Wikimedia) |
 | `DATABASE_URL` | connexion Postgres directe (local : `postgresql://postgres:postgres@127.0.0.1:54322/postgres`) |
+| `PIPELINE_MIN_INTERVAL_S` | délai minimal entre deux requêtes vers un même hôte, en secondes (défaut 1) |
 | `IMAGE_STORAGE_PROVIDER` | `local` (développement), `r2` (production) ou `supabase` |
 
 Données Sackmann (jamais versionnées, licence CC BY-NC-SA 4.0) :

@@ -15,7 +15,7 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 ## Base de données
 
 - **2026-10-15 - Écritures uniquement côté serveur.** `anon` et `authenticated` n'ont que le droit SELECT, filtré par RLS. Toute écriture passe par une fonction SECURITY DEFINER ou par la clé de service. Un test pgTAP vérifie qu'aucune table publique n'est modifiable par un client et liste les seules fonctions appelables.
-- **2026-10-15 - Contenu complet débloqué par la possession**, au niveau de la base : biographie, statistiques et photo (avec crédits) ne sont lisibles que par les propriétaires de la carte. La page publique n'utilise que `players` (nom, pays, rareté).
+- **2026-10-16 - Recto public, verso réservé.** Le recto (photo non masquée avec son crédit, nom, drapeau, rareté) est lisible par tous. Le verso (statistiques, biographie, extraits Wikipédia) n'est lisible que par les propriétaires de la carte, au niveau de la base. Remplace la décision du 15/10 qui réservait aussi la photo.
 - **2026-10-15 - Photo masquée = invisible partout.** La politique RLS exclut `hidden = true` pour tout le monde sauf les admins. Le masquage passe par `admin_set_image_hidden` (un appel) et laisse une trace dans `admin_audit_log`.
 - **2026-10-15 - Correction de rareté en SQL** (`update players set rarity_override = ...`). La rareté calculée reste intacte, `rarity_effective` sert au tirage, et un trigger journalise la correction.
 - **2026-10-15 - Registre protégé par la base** : aucune mise à jour, aucune suppression (sauf cascade de suppression de compte, RGPD), solde négatif refusé par un trigger sérialisé par utilisateur, clé d'idempotence unique.
@@ -27,6 +27,9 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 
 - **2026-10-16 - Pipeline en Python, écriture directe en Postgres** (`DATABASE_URL`), upserts sur clés naturelles, corrections manuelles jamais écrasées. Sélection du mini-catalogue par nombre d'éditions Wikipédia (`wikibase:sitelinks`), même critère que le seuil du catalogue complet.
 - **2026-10-16 - Stockage local des images en développement** (`IMAGE_STORAGE_PROVIDER=local`, fichiers dans `public/card-images/`, ignorés par git). La base ne stocke que la clé de l'objet, l'URL publique vient de `NEXT_PUBLIC_IMAGE_BASE_URL`.
+
+- **2026-10-16 - Conservation des données.** Journal d'audit : 3 ans puis suppression. Demandes de retrait : nom, email et motif effacés 12 mois après traitement, sauf litige (`dispute`), l'enregistrement anonymisé est conservé. Purge quotidienne `private.purge_expired_data()` planifiée par pg_cron (03:17 UTC), elle-même journalisée.
+- **2026-10-16 - Débit du pipeline** : une requête par seconde et par hôte par défaut (`PIPELINE_MIN_INTERVAL_S`), User-Agent `DeuceDataPipeline/0.1 (<PIPELINE_CONTACT>)`, contact lu dans l'environnement.
 
 ## Jeu
 

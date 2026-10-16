@@ -31,4 +31,5 @@ Voir `pipeline/README.md`. En résumé :
 ## Données manquantes ou incertaines
 
 - **2026-10-16 - Accès réseau** : depuis l'environnement de développement cloud, les domaines Wikimedia (`query.wikidata.org`, `*.wikipedia.org`, `commons.wikimedia.org`, `upload.wikimedia.org`, `wikimedia.org`) sont bloqués par la politique réseau, et `raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_players.csv` répond 404. **À vérifier** : disponibilité actuelle des dépôts Sackmann et nom de la branche. Aucun import réel n'a encore eu lieu.
+- **2026-10-16 - Limitation Wikimedia** : après ouverture du réseau, Wikimedia refuse les requêtes venant de l'adresse IP partagée de l'environnement cloud (« You are making too many requests », 429 puis 403), y compris Wikidata SPARQL, avec un User-Agent conforme. Le pipeline doit être lancé depuis une machine personnelle. `github.com` reste refusé par le proxy de l'environnement (403), les dépôts Sackmann ne sont donc pas encore vérifiés.
 - **Joueurs d'avant l'ère Open** : les fichiers Sackmann sont incomplets avant 1968, leur score de rareté repose davantage sur la notoriété.

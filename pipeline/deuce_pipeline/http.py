@@ -22,7 +22,7 @@ class HttpClient:
     def __init__(
         self,
         cache_dir: Path | None = DEFAULT_CACHE_DIR,
-        min_interval_s: float = 0.2,
+        min_interval_s: float | None = None,
         max_retries: int = 5,
         timeout_s: float = 60.0,
     ) -> None:
@@ -37,7 +37,13 @@ class HttpClient:
             follow_redirects=True,
         )
         self._cache_dir = cache_dir
-        self._min_interval_s = min_interval_s
+        # Polite default: at most one request per second per host, overridable
+        # with PIPELINE_MIN_INTERVAL_S.
+        self._min_interval_s = (
+            min_interval_s
+            if min_interval_s is not None
+            else float(os.environ.get("PIPELINE_MIN_INTERVAL_S", "1.0"))
+        )
         self._max_retries = max_retries
         self._last_call: dict[str, float] = {}
 

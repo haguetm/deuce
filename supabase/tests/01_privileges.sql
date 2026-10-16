@@ -23,8 +23,8 @@ $$, 'anon and authenticated cannot write any public table directly');
 select is_empty($$
   select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and c.relkind = 'r' and has_table_privilege('anon', c.oid, 'SELECT')
-    and c.relname not in ('data_sources', 'players', 'game_config')
-$$, 'anon can only read the public catalogue tables');
+    and c.relname not in ('data_sources', 'players', 'game_config', 'player_images')
+$$, 'anon can only read the public catalogue tables (card fronts included)');
 
 select set_eq($$
   select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
