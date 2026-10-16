@@ -15,7 +15,8 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:test:plain": "scripts/db/test-plain-postgres.sh",
-    "scan:secrets": "scripts/scan-secrets.sh"
+    "scan:secrets": "scripts/scan-secrets.sh",
+    "settings:sync": "tsx --env-file=.env.local scripts/sync-private-settings.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -36,6 +37,7 @@
     "prettier": "^3.9.10",
     "supabase": "^2.121.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.4"
   },

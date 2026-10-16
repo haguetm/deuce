@@ -18,15 +18,16 @@ pnpm dev               # http://localhost:3000 -> redirige vers /fr ou /en
 
 ## Commandes
 
-| Commande                                     | Rôle                                                        |
-| -------------------------------------------- | ----------------------------------------------------------- |
-| `pnpm dev`                                   | serveur de développement                                    |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` | vérifications lancées aussi par la CI                       |
-| `pnpm build`                                 | build de production                                         |
-| `pnpm db:start` / `pnpm db:stop`             | Supabase local                                              |
-| `pnpm db:reset`                              | rejoue les migrations et le seed                            |
-| `pnpm db:test`                               | tests pgTAP sur Supabase local (référence, lancé par la CI) |
-| `pnpm db:test:plain`                         | mêmes tests sans Docker, sur un PostgreSQL local avec pgTAP |
+| Commande                                     | Rôle                                                                         |
+| -------------------------------------------- | ---------------------------------------------------------------------------- |
+| `pnpm dev`                                   | serveur de développement                                                     |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` | vérifications lancées aussi par la CI                                        |
+| `pnpm build`                                 | build de production                                                          |
+| `pnpm db:start` / `pnpm db:stop`             | Supabase local                                                               |
+| `pnpm db:reset`                              | rejoue les migrations et le seed                                             |
+| `pnpm db:test`                               | tests pgTAP sur Supabase local (référence, lancé par la CI)                  |
+| `pnpm settings:sync`                         | copie les seuils privés (parrainage, anti-abus) de `.env.local` vers la base |
+| `pnpm db:test:plain`                         | mêmes tests sans Docker, sur un PostgreSQL local avec pgTAP                  |
 
 ## Arborescence
 

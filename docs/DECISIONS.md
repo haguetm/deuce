@@ -23,6 +23,8 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 - **2026-10-15 - Demandes de retrait insérées par une route serveur** (Turnstile + limitation de débit), aucune insertion directe par un client.
 - **2026-10-15 - Tests de base sans Docker.** Le conteneur de développement ne peut pas télécharger les images Supabase. `pnpm db:test:plain` lance les migrations et les tests pgTAP sur un PostgreSQL local avec une émulation minimale de Supabase (`scripts/db/supabase-shim.sql`). La CI exécute le vrai Supabase (`supabase test db`), qui fait référence.
 
+- **2026-10-16 - Seuils du parrainage et de l'anti-abus hors du dépôt.** Le dépôt est public. Les seuils et poids viennent de variables d'environnement (noms dans `src/lib/server/private-settings.ts`, valeurs génériques dans `.env.example`), copiés par `pnpm settings:sync` dans `private.settings`, schéma non exposé par l'API et illisible pour les clients. Un paramètre manquant fait échouer la fonction de jeu au lieu de désactiver la protection. Les récompenses (boosters offerts) restent publiques : les joueurs doivent savoir ce qu'ils gagnent.
+
 ## Jeu
 
 - **2026-10-15 - Aces contre booster** : 100 aces = 1 booster bonus, 3 par jour maximum. Un script de simulation vérifie que le gain moyen d'aces par booster reste nettement sous 100 (aucune boucle de boosters gratuits).
