@@ -1,0 +1,39 @@
+{
+  "brand": {
+    "tagline": "Le tennis, une carte à la fois.",
+    "pitch": "Ouvre un booster gratuit toutes les 15 minutes et collectionne les joueurs et joueuses de toute l'histoire du tennis.",
+    "comingSoon": "Premier service prévu avant l'Open d'Australie 2027."
+  },
+  "nav": {
+    "home": "Accueil",
+    "language": "Langue",
+    "switchTo": "English"
+  },
+  "home": {
+    "metaTitle": "{name} - cartes de tennis à collectionner",
+    "metaDescription": "Jeu gratuit de cartes à collectionner sur les joueurs et joueuses de tennis. Un booster toutes les 15 minutes.",
+    "joinDiscord": "Rejoindre le Discord"
+  },
+  "rarity": {
+    "common": "Ramasseur de balles",
+    "uncommon": "Joueur de club",
+    "rare": "Tête de série",
+    "epic": "Finaliste",
+    "legendary": "N°1 mondial",
+    "mythic": "GOAT"
+  },
+  "footer": {
+    "fanProject": "Projet de fans non officiel, sans lien avec l'ATP, la WTA, les joueurs ou les tournois.",
+    "statsCredit": "Statistiques : jeu de données de Jeff Sackmann (tennis_atp, tennis_wta), licence CC BY-NC-SA 4.0.",
+    "textCredit": "Biographies : extraits de Wikipédia, licence CC BY-SA 4.0. Photos : Wikimedia Commons, crédits sur chaque carte.",
+    "free": "Gratuit, sans publicité, sans achat."
+  },
+  "skip": {
+    "toContent": "Aller au contenu"
+  },
+  "notFound": {
+    "title": "Faute de pied",
+    "body": "Cette page est sortie du court.",
+    "back": "Retour à l'accueil"
+  }
+}

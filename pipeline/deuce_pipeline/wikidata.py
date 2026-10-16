@@ -1,0 +1,179 @@
+"""Wikidata: candidate selection and structured facts (CC0)."""
+from __future__ import annotations
+
+import re
+import unicodedata
+from dataclasses import dataclass, field
+from datetime import date
+from urllib.parse import unquote
+
+from .http import HttpClient
+
+SPARQL_URL = "https://query.wikidata.org/sparql"
+TENNIS_PLAYER = "Q10833314"  # occupation: tennis player
+MALE, FEMALE = "Q6581097", "Q6581072"
+HANDS = {"Q3029952": "right", "Q789447": "left"}
+
+# Candidates: occupation tennis player AND an article on fr or en Wikipedia.
+_CANDIDATES_BODY = f"""
+  ?p wdt:P106 wd:{TENNIS_PLAYER} ;
+     wikibase:sitelinks ?links .
+  FILTER EXISTS {{
+    ?article schema:about ?p ;
+             schema:isPartOf ?wiki .
+    VALUES ?wiki {{ <https://fr.wikipedia.org/> <https://en.wikipedia.org/> }}
+  }}
+"""
+
+
+def count_query(min_sitelinks: int = 0) -> str:
+    return f"""SELECT (COUNT(DISTINCT ?p) AS ?n) WHERE {{{_CANDIDATES_BODY}
+  FILTER(?links >= {int(min_sitelinks)})
+}}"""
+
+
+def top_candidates_query(limit: int, min_sitelinks: int = 0) -> str:
+    """Most-linked candidates first (number of Wikipedia editions = notoriety proxy)."""
+    return f"""SELECT ?p ?links WHERE {{{_CANDIDATES_BODY}
+  FILTER(?links >= {int(min_sitelinks)})
+}} ORDER BY DESC(?links) ?p LIMIT {int(limit)}"""
+
+
+def details_query(qids: list[str]) -> str:
+    values = " ".join(f"wd:{q}" for q in qids if re.fullmatch(r"Q\d+", q))
+    return f"""SELECT ?p
+  (SAMPLE(?labelEn) AS ?label_en) (SAMPLE(?labelFr) AS ?label_fr)
+  (SAMPLE(?sex) AS ?sex) (MIN(?birth) AS ?birth)
+  (SAMPLE(?sportCode) AS ?sport_country) (SAMPLE(?citizenCode) AS ?citizen_country)
+  (SAMPLE(?hand) AS ?hand) (MAX(?heightCm) AS ?height_cm)
+  (SAMPLE(?image) AS ?image)
+  (MIN(?start) AS ?career_start) (MAX(?end) AS ?career_end)
+  (SAMPLE(?frTitle) AS ?frwiki) (SAMPLE(?enTitle) AS ?enwiki)
+  (SAMPLE(?atpId) AS ?atp_id) (SAMPLE(?wtaId) AS ?wta_id)
+WHERE {{
+  VALUES ?p {{ {values} }}
+  OPTIONAL {{ ?p rdfs:label ?labelEn . FILTER(LANG(?labelEn) = "en") }}
+  OPTIONAL {{ ?p rdfs:label ?labelFr . FILTER(LANG(?labelFr) = "fr") }}
+  OPTIONAL {{ ?p wdt:P21 ?sex }}
+  OPTIONAL {{ ?p wdt:P569 ?birth }}
+  OPTIONAL {{ ?p wdt:P1532/wdt:P297 ?sportCode }}
+  OPTIONAL {{ ?p wdt:P27/wdt:P297 ?citizenCode }}
+  OPTIONAL {{ ?p wdt:P741 ?hand }}
+  OPTIONAL {{
+    ?p p:P2048/psn:P2048 [ wikibase:quantityAmount ?heightM ] .
+    BIND(?heightM * 100 AS ?heightCm)
+  }}
+  OPTIONAL {{ ?p wdt:P18 ?image }}
+  OPTIONAL {{ ?p wdt:P2031 ?start }}
+  OPTIONAL {{ ?p wdt:P2032 ?end }}
+  OPTIONAL {{ ?fr schema:about ?p ; schema:isPartOf <https://fr.wikipedia.org/> ; schema:name ?frTitle }}
+  OPTIONAL {{ ?en schema:about ?p ; schema:isPartOf <https://en.wikipedia.org/> ; schema:name ?enTitle }}
+  OPTIONAL {{ ?p wdt:P536 ?atpId }}
+  OPTIONAL {{ ?p wdt:P597 ?wtaId }}
+}} GROUP BY ?p"""
+
+
+@dataclass
+class WikidataPlayer:
+    qid: str
+    name: str
+    sex: str | None
+    birth_date: date | None
+    country_code: str | None
+    hand: str | None
+    height_cm: int | None
+    commons_file: str | None
+    career_start_year: int | None
+    career_end_year: int | None
+    frwiki_title: str | None
+    enwiki_title: str | None
+    atp_id: str | None
+    wta_id: str | None
+    issues: list[str] = field(default_factory=list)
+
+
+def run_query(client: HttpClient, query: str) -> list[dict]:
+    data = client.get_json(SPARQL_URL, params={"query": query, "format": "json"})
+    return data["results"]["bindings"]
+
+
+def _value(row: dict, key: str) -> str | None:
+    cell = row.get(key)
+    return cell["value"] if cell else None
+
+
+def _qid(uri: str | None) -> str | None:
+    return uri.rsplit("/", 1)[-1] if uri else None
+
+
+def _year(value: str | None) -> int | None:
+    match = re.match(r"^[+-]?(\d{4})", value or "")
+    return int(match.group(1)) if match else None
+
+
+def _date(value: str | None) -> date | None:
+    match = re.match(r"^\+?(\d{4})-(\d{2})-(\d{2})", value or "")
+    if not match:
+        return None
+    try:
+        return date(*map(int, match.groups()))
+    except ValueError:  # Wikidata "00" day/month for imprecise dates
+        return None
+
+
+def parse_candidates(rows: list[dict]) -> list[tuple[str, int]]:
+    return [(_qid(_value(r, "p")), int(_value(r, "links") or 0)) for r in rows]  # type: ignore[misc]
+
+
+def parse_player(row: dict) -> WikidataPlayer:
+    qid = _qid(_value(row, "p")) or ""
+    issues: list[str] = []
+    name = _value(row, "label_en") or _value(row, "label_fr") or ""
+    if not name:
+        issues.append("no English or French label")
+
+    sex_qid = _qid(_value(row, "sex"))
+    sex = {MALE: "male", FEMALE: "female"}.get(sex_qid or "")
+    if sex is None:
+        issues.append(f"unsupported or missing sex ({sex_qid})")
+
+    country = _value(row, "sport_country") or _value(row, "citizen_country")
+    if country and not re.fullmatch(r"[A-Z]{2}", country):
+        country = None
+    if country is None:
+        issues.append("no ISO country code")
+
+    height = _value(row, "height_cm")
+    height_cm = round(float(height)) if height else None
+    if height_cm is not None and not 120 <= height_cm <= 230:
+        issues.append(f"implausible height {height_cm} cm ignored")
+        height_cm = None
+
+    image = _value(row, "image")
+    commons_file = None
+    if image:
+        # http://commons.wikimedia.org/wiki/Special:FilePath/Name.jpg
+        commons_file = "File:" + unquote(image.rsplit("/", 1)[-1])
+
+    return WikidataPlayer(
+        qid=qid,
+        name=name,
+        sex=sex,
+        birth_date=_date(_value(row, "birth")),
+        country_code=country,
+        hand=HANDS.get(_qid(_value(row, "hand")) or ""),
+        height_cm=height_cm,
+        commons_file=commons_file,
+        career_start_year=_year(_value(row, "career_start")),
+        career_end_year=_year(_value(row, "career_end")),
+        frwiki_title=_value(row, "frwiki"),
+        enwiki_title=_value(row, "enwiki"),
+        atp_id=_value(row, "atp_id"),
+        wta_id=_value(row, "wta_id"),
+        issues=issues,
+    )
+
+
+def slugify(name: str) -> str:
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", ascii_name.lower()).strip("-")
