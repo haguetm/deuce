@@ -37,4 +37,4 @@ Une photo peut être masquée immédiatement : la carte affiche alors une silhou
 
 ## Données personnelles
 
-Le jeu collecte uniquement l'email, le pseudo et l'identifiant de connexion (Discord, Google ou email). Aucun cookie n'est déposé pour les visiteurs non connectés. L'export et la suppression du compte sont disponibles en libre-service. Les détails figurent dans la politique de confidentialité du site.
+Le jeu collecte uniquement l'email, le pseudo et l'identifiant de connexion (Discord, Google ou email). Aucun cookie n'est déposé pour les visiteurs non connectés. L'export et la suppression du compte sont disponibles en libre-service. Les coordonnées laissées dans une demande de retrait sont effacées 12 mois après son traitement, sauf litige en cours. Le journal des actions de modération est conservé 3 ans. Les détails figurent dans la politique de confidentialité du site.

@@ -15,7 +15,7 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 ## Base de données
 
 - **2026-10-15 - Écritures uniquement côté serveur.** `anon` et `authenticated` n'ont que le droit SELECT, filtré par RLS. Toute écriture passe par une fonction SECURITY DEFINER ou par la clé de service. Un test pgTAP vérifie qu'aucune table publique n'est modifiable par un client et liste les seules fonctions appelables.
-- **2026-10-15 - Contenu complet débloqué par la possession**, au niveau de la base : biographie, statistiques et photo (avec crédits) ne sont lisibles que par les propriétaires de la carte. La page publique n'utilise que `players` (nom, pays, rareté).
+- **2026-10-16 - Recto public, verso réservé.** Le recto (photo non masquée avec son crédit, nom, drapeau, rareté) est lisible par tous. Le verso (statistiques, biographie, extraits Wikipédia) n'est lisible que par les propriétaires de la carte, au niveau de la base. Remplace la décision du 15/10 qui réservait aussi la photo.
 - **2026-10-15 - Photo masquée = invisible partout.** La politique RLS exclut `hidden = true` pour tout le monde sauf les admins. Le masquage passe par `admin_set_image_hidden` (un appel) et laisse une trace dans `admin_audit_log`.
 - **2026-10-15 - Correction de rareté en SQL** (`update players set rarity_override = ...`). La rareté calculée reste intacte, `rarity_effective` sert au tirage, et un trigger journalise la correction.
 - **2026-10-15 - Registre protégé par la base** : aucune mise à jour, aucune suppression (sauf cascade de suppression de compte, RGPD), solde négatif refusé par un trigger sérialisé par utilisateur, clé d'idempotence unique.
@@ -28,12 +28,26 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 - **2026-10-16 - Pipeline en Python, écriture directe en Postgres** (`DATABASE_URL`), upserts sur clés naturelles, corrections manuelles jamais écrasées. Sélection du mini-catalogue par nombre d'éditions Wikipédia (`wikibase:sitelinks`), même critère que le seuil du catalogue complet.
 - **2026-10-16 - Stockage local des images en développement** (`IMAGE_STORAGE_PROVIDER=local`, fichiers dans `public/card-images/`, ignorés par git). La base ne stocke que la clé de l'objet, l'URL publique vient de `NEXT_PUBLIC_IMAGE_BASE_URL`.
 
+- **2026-10-16 - Conservation des données.** Journal d'audit : 3 ans puis suppression. Demandes de retrait : nom, email et motif effacés 12 mois après traitement, sauf litige (`dispute`), l'enregistrement anonymisé est conservé. Purge quotidienne `private.purge_expired_data()` planifiée par pg_cron (03:17 UTC), elle-même journalisée.
+- **2026-10-16 - Débit du pipeline** : une requête par seconde et par hôte par défaut (`PIPELINE_MIN_INTERVAL_S`), User-Agent `DeuceDataPipeline/0.1 (<PIPELINE_CONTACT>)`, contact lu dans l'environnement.
+
+- **2026-10-16 - Données de développement fictives** (`pnpm db:seed:dev`) : 100 joueurs aux noms inventés, sans photo, statistiques plausibles, toutes les raretés représentées. Lignes marquées `players.is_dev_seed`. Un trigger refuse ces lignes sauf si la transaction déclare `app.environment = 'development'`, ce que seul le script de dev fait ; le script refuse toute base non locale. Aucune migration ni seed de production ne les contient (testé).
+
+- **2026-10-16 - Connexion (tâche 4a)** : Discord (en premier), Google, lien magique par email, via Supabase Auth et `@supabase/ssr`. Le proxy ne rafraîchit la session que si un cookie Supabase existe : aucun cookie pour les visiteurs anonymes. L'en-tête lit la session côté navigateur pour que les pages publiques restent statiques et cachables. Case d'âge, Turnstile et pseudo restent pour la tâche 4b.
+- **2026-10-16 - Révélation des boosters (tâche 6)** : le serveur tire et enregistre les 5 cartes avant tout affichage ; le client ne fait que la mise en scène (machine d'état testée). Ordre de révélation par slot, la carte garantie en dernier ; lueur de la couleur de rareté avant de retourner une carte Épique ou mieux ; finition holographique discrète à partir d'Épique ; animations coupées avec `prefers-reduced-motion`. Un identifiant de requête est conservé jusqu'à la réponse du serveur : un nouvel essai après une coupure réseau rejoue la même ouverture.
+- **2026-10-16 - Aperçu de développement** `/fr/dev/booster` : révélation sur joueurs fictifs sans Supabase, désactivé en production (sauf `ENABLE_DEV_PREVIEW=1`).
+
 ## Jeu
 
 - **2026-10-15 - Aces contre booster** : 100 aces = 1 booster bonus, 3 par jour maximum. Un script de simulation vérifie que le gain moyen d'aces par booster reste nettement sous 100 (aucune boucle de boosters gratuits).
 - **2026-10-15 - Garantie de rareté** : slots 1 à 4 sur la table standard, slot 5 sur la table « Peu commune ou mieux » renormalisée. La page des probabilités affiche le taux par slot et le taux global par booster.
 - **2026-10-15 - Boosters thématiques reportés en phase 2.** Seule l'« édition Open d'Australie » existe au MVP (filtre dans la config). Albums automatiques limités à la nationalité.
-- **Valeurs de recyclage (provisoire)** : définies dans `config/game.ts` (tâche 5), validées par la simulation.
+- **2026-10-16 - Paramètres de jeu dans `config/game.ts`**, copiés dans `public.game_config` par le fichier généré `supabase/seed-game-config.sql` (`pnpm config:generate`). Un test échoue si le fichier généré n'est pas à jour. En production, appliquer ce fichier avec psql après chaque changement.
+- **2026-10-16 - Tirage** : graine de 32 octets générée par le serveur et conservée pour chaque ouverture, tirages dérivés par HMAC-SHA256 (rejouables pour audit). Rareté selon la table, puis carte uniforme dans le tier. Le slot 5 utilise toujours la table « Peu commune ou mieux » renormalisée. Si un tier est vide, l'ouverture échoue au lieu de fausser les taux affichés.
+- **2026-10-16 - Recharge paresseuse** : +1 booster toutes les 15 minutes, calculé à la lecture ; le minuteur ne tourne pas quand le stock est plein. `open_booster` verrouille la ligne `booster_state` du joueur : 6 ouvertures simultanées sur un stock de 1 donnent 1 succès et 5 refus (vérifié en local).
+- **2026-10-16 - Idempotence des ouvertures** : identifiant de requête fourni par le client, unique par joueur ; un rejeu renvoie la première ouverture.
+- **Valeurs de recyclage (provisoire)** : Commune 1, Peu commune 3, Rare 8, Épique 25, Légendaire 80, Mythique 400 aces. Simulation (`pnpm simulate:economy`, catalogue de 4 000 cartes) : environ 1 ace par booster sur les 100 premiers, 12 à 15 entre 100 et 1 000, 30 entre 1 000 et 10 000, plafond théorique 31,7 aces par booster quand toutes les cartes sont des doublons, soit 31,7 % du prix d'un booster en aces. Il faut au moins 3,2 boosters gratuits pour en financer un : aucune boucle de boosters gratuits.
+- **Règle : relancer `pnpm simulate:economy` à chaque nouvelle source d'aces** (parrainage, succès, quêtes, marché…) et l'intégrer au modèle (`src/lib/game/economy.ts`). Le test `tests/unit/economy-sources.test.ts` échoue tant qu'une raison de crédit écrite par du code SQL n'est pas listée dans `SIMULATED_ACE_SOURCES`.
 
 ## Planning phase 1 (11 semaines utiles, absence du 26/12 au 03/01)
 
@@ -64,6 +78,12 @@ Alerte si une tâche dépasse son estimation de plus de 30 %. Le temps constaté
 | T1 Socle, CI, preview | 6,5 h  | 6,5 h    | 0 %   |                                                                         |
 | T2 Schéma, RLS, pgTAP | 6 h    | 7 h      | +17 % | Docker indisponible en conteneur : banc de test PostgreSQL local ajouté |
 
-| T3a Mini-pipeline (200 joueurs) | 5 h | 4 h (code et tests) | en cours | exécution réelle bloquée : domaines Wikimedia refusés par le réseau du conteneur |
+| T3a Mini-pipeline (200 joueurs) | 5 h | 4,5 h (code, tests, débit) | en cours | import réel bloqué : Wikimedia limite l'IP partagée du conteneur |
+| Hors plan : recto public, conservation des données | - | 1,5 h | - | demandes du 16/10, prises sur la marge |
+| T5 Tirage SQL, tests, simulation | 8,5 h | 7 h | -18 % | |
+| Hors plan : graine illisible, contrôles docs et économie | - | 1 h | - | demandes du 16/10 |
+| Hors plan : données fictives de dev, scripts d'import bash/PowerShell | - | 1,5 h | - | demandes du 16/10 |
+| T4a Connexion Discord, Google, email | 3 h | 2 h | -33 % | Google avancé depuis T4b |
+| T6 Interface d'ouverture et révélation | 8 h | 6,5 h | -19 % | parcours réel non testé de bout en bout (pas de Supabase dans le conteneur) |
 
-Marge restante : **2 h**.
+Marge restante : **-1,5 h**. Les ajouts hors plan du 16/10 (4 h) dépassent la marge de 2 h ; les tâches 4a, 5 et 6 ont rendu 4 h sur leurs estimations. Bilan net du planning : +0,5 h d'avance.

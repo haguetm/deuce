@@ -27,6 +27,7 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
   "${PSQL[@]}" -f "$f"
 done
 "${PSQL[@]}" -f "$ROOT/supabase/seed.sql"
+"${PSQL[@]}" -f "$ROOT/supabase/seed-game-config.sql"
 "${PSQL[@]}" -c "create extension if not exists pgtap with schema extensions;"
 
 PGOPTIONS="-c search_path=public,extensions" pg_prove -h "$WORK" -p "$PORT" -U postgres -d postgres \

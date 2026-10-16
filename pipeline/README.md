@@ -16,6 +16,7 @@ Variables d'environnement (voir `.env.example` à la racine) :
 |---|---|
 | `PIPELINE_CONTACT` | email ou URL de contact, obligatoire dans le User-Agent (politique Wikimedia) |
 | `DATABASE_URL` | connexion Postgres directe (local : `postgresql://postgres:postgres@127.0.0.1:54322/postgres`) |
+| `PIPELINE_MIN_INTERVAL_S` | délai minimal entre deux requêtes vers un même hôte, en secondes (défaut 1) |
 | `IMAGE_STORAGE_PROVIDER` | `local` (développement), `r2` (production) ou `supabase` |
 
 Données Sackmann (jamais versionnées, licence CC BY-NC-SA 4.0) :
@@ -24,6 +25,28 @@ Données Sackmann (jamais versionnées, licence CC BY-NC-SA 4.0) :
 git clone --depth 1 https://github.com/JeffSackmann/tennis_atp pipeline/data/tennis_atp
 git clone --depth 1 https://github.com/JeffSackmann/tennis_wta pipeline/data/tennis_wta
 ```
+
+## Import réel depuis une machine personnelle
+
+Wikimedia filtre les requêtes venant des adresses IP cloud partagées : lancer l'import depuis ta machine. Les scripts lisent `DATABASE_URL` depuis `supabase status` (Supabase local démarré avec `pnpm db:start`), clonent ou mettent à jour les données Sackmann ATP et WTA, installent l'environnement Python puis lancent l'import. La fin du run affiche un résumé des compteurs et écrit `pipeline/logs/<date>-import-issues.json`.
+
+bash (Linux, macOS, WSL, Git Bash) :
+
+```bash
+pnpm db:start
+export PIPELINE_CONTACT="ton-email-ou-url"
+pipeline/run-import.sh              # 200 joueurs ; LIMIT=500 pipeline/run-import.sh pour plus
+```
+
+PowerShell (Windows) :
+
+```powershell
+pnpm db:start
+$env:PIPELINE_CONTACT = "ton-email-ou-url"
+.\pipeline\run-import.ps1            # 200 joueurs ; -Limit 500 pour plus
+```
+
+Si `supabase status` n'est pas disponible, définir `DATABASE_URL` à la main (valeur par défaut locale : `postgresql://postgres:postgres@127.0.0.1:54322/postgres`).
 
 ## Commandes
 

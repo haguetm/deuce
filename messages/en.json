@@ -7,7 +7,11 @@
   "nav": {
     "home": "Home",
     "language": "Language",
-    "switchTo": "Français"
+    "switchTo": "Français",
+    "boosters": "Boosters",
+    "history": "History",
+    "login": "Sign in",
+    "logout": "Sign out"
   },
   "home": {
     "metaTitle": "{name} - collectible tennis cards",
@@ -35,5 +39,63 @@
     "title": "Foot fault",
     "body": "This page went out of bounds.",
     "back": "Back to home"
+  },
+  "auth": {
+    "title": "Step onto the court",
+    "subtitle": "Sign in to open your boosters and keep your collection.",
+    "discord": "Continue with Discord",
+    "google": "Continue with Google",
+    "or": "or",
+    "emailLabel": "Email address",
+    "emailSubmit": "Email me a sign-in link",
+    "emailSent": "Link sent. Check your inbox (and spam, no judgment).",
+    "error": "Sign-in failed. Please try again.",
+    "notConfigured": "Sign-in is not configured on this environment yet."
+  },
+  "booster": {
+    "title": "Boosters",
+    "stock": "{count, plural, =0 {No booster available} one {# booster available} other {# boosters available}}",
+    "stockOf": "out of {max}",
+    "nextRefill": "Next booster in <countdown></countdown>",
+    "full": "Stock full: open them before they cool down.",
+    "bonus": "{count, plural, one {# bonus booster} other {# bonus boosters}}",
+    "open": "Open a booster",
+    "openBonus": "Open a bonus booster",
+    "opening": "Tearing the wrapper…",
+    "packLabel": "Sealed booster",
+    "tapToReveal": "Flip the next card",
+    "revealAll": "Reveal all",
+    "again": "Open the next one",
+    "close": "Back to boosters",
+    "new": "New",
+    "duplicate": "Duplicate",
+    "summaryTitle": "Your pull",
+    "bestPull": "Best card: {name}",
+    "cardOf": "Card {index} of {total}",
+    "errors": {
+      "no_booster_available": "Out of boosters. The ball kid will be back soon.",
+      "daily_cap_reached": "Daily limit of aces boosters reached.",
+      "insufficient_balance": "Not enough aces for this booster.",
+      "not_authenticated": "Sign in to open a booster.",
+      "unknown": "The booster double-faulted. Please try again."
+    }
+  },
+  "card": {
+    "silhouette": "Photo unavailable",
+    "photoCredit": "Photo: {author}, {license}",
+    "flag": "Flag: {country}"
+  },
+  "history": {
+    "title": "Opening history",
+    "empty": "No booster opened yet. The court is waiting.",
+    "openedAt": "Opened on {date}",
+    "source": {
+      "free": "Free",
+      "bonus": "Bonus",
+      "aces": "Aces"
+    }
+  },
+  "dev": {
+    "previewBanner": "Development preview: fictional data, no server call."
   }
 }

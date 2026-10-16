@@ -15,6 +15,10 @@ export const routing = defineRouting({
     "/": "/",
     "/takedown": { fr: "/retrait", en: "/takedown" },
     "/odds": { fr: "/probabilites", en: "/odds" },
+    "/login": { fr: "/connexion", en: "/login" },
+    "/boosters": "/boosters",
+    "/history": { fr: "/historique", en: "/history" },
+    "/dev/booster": "/dev/booster",
   },
 });
 

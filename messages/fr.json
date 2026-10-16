@@ -7,7 +7,11 @@
   "nav": {
     "home": "Accueil",
     "language": "Langue",
-    "switchTo": "English"
+    "switchTo": "English",
+    "boosters": "Boosters",
+    "history": "Historique",
+    "login": "Connexion",
+    "logout": "Déconnexion"
   },
   "home": {
     "metaTitle": "{name} - cartes de tennis à collectionner",
@@ -35,5 +39,63 @@
     "title": "Faute de pied",
     "body": "Cette page est sortie du court.",
     "back": "Retour à l'accueil"
+  },
+  "auth": {
+    "title": "Entrer sur le court",
+    "subtitle": "Connecte-toi pour ouvrir tes boosters et garder ta collection.",
+    "discord": "Continuer avec Discord",
+    "google": "Continuer avec Google",
+    "or": "ou",
+    "emailLabel": "Adresse email",
+    "emailSubmit": "Recevoir un lien de connexion",
+    "emailSent": "Lien envoyé. Vérifie ta boîte mail (et les spams, on ne juge pas).",
+    "error": "La connexion a échoué. Réessaie.",
+    "notConfigured": "La connexion n'est pas encore configurée sur cet environnement."
+  },
+  "booster": {
+    "title": "Boosters",
+    "stock": "{count, plural, =0 {Aucun booster disponible} one {# booster disponible} other {# boosters disponibles}}",
+    "stockOf": "sur {max}",
+    "nextRefill": "Prochain booster dans <countdown></countdown>",
+    "full": "Stock plein : ouvre-les avant qu'ils ne refroidissent.",
+    "bonus": "{count, plural, one {# booster bonus} other {# boosters bonus}}",
+    "open": "Ouvrir un booster",
+    "openBonus": "Ouvrir un booster bonus",
+    "opening": "Déchirage de l'emballage…",
+    "packLabel": "Booster scellé",
+    "tapToReveal": "Retourner la carte suivante",
+    "revealAll": "Tout révéler",
+    "again": "Ouvrir le suivant",
+    "close": "Revenir aux boosters",
+    "new": "Nouvelle",
+    "duplicate": "Doublon",
+    "summaryTitle": "Ton tirage",
+    "bestPull": "Meilleure carte : {name}",
+    "cardOf": "Carte {index} sur {total}",
+    "errors": {
+      "no_booster_available": "Plus de booster en stock. Le ramasseur de balles revient bientôt.",
+      "daily_cap_reached": "Limite quotidienne de boosters en aces atteinte.",
+      "insufficient_balance": "Pas assez d'aces pour ce booster.",
+      "not_authenticated": "Connecte-toi pour ouvrir un booster.",
+      "unknown": "Le booster a fait une double faute. Réessaie."
+    }
+  },
+  "card": {
+    "silhouette": "Photo indisponible",
+    "photoCredit": "Photo : {author}, {license}",
+    "flag": "Drapeau : {country}"
+  },
+  "history": {
+    "title": "Historique des ouvertures",
+    "empty": "Aucun booster ouvert pour l'instant. Le court t'attend.",
+    "openedAt": "Ouvert le {date}",
+    "source": {
+      "free": "Gratuit",
+      "bonus": "Bonus",
+      "aces": "Aces"
+    }
+  },
+  "dev": {
+    "previewBanner": "Aperçu de développement : données fictives, aucun appel au serveur."
   }
 }
