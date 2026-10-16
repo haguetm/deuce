@@ -29,6 +29,7 @@ pnpm dev               # http://localhost:3000 -> redirige vers /fr ou /en
 | `pnpm config:generate`                       | régénère `supabase/seed-game-config.sql` depuis `config/game.ts`             |
 | `pnpm simulate:economy`                      | simulation du gain d'aces par booster (recyclage des doublons)               |
 | `pnpm settings:sync`                         | copie les seuils privés (parrainage, anti-abus) de `.env.local` vers la base |
+| `pnpm db:seed:dev`                           | charge 100 joueurs fictifs (is_dev_seed) dans la base locale uniquement      |
 | `pnpm db:test:plain`                         | mêmes tests sans Docker, sur un PostgreSQL local avec pgTAP                  |
 
 ## Arborescence

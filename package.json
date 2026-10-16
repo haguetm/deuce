@@ -18,7 +18,8 @@
     "scan:secrets": "scripts/scan-secrets.sh",
     "settings:sync": "tsx --env-file=.env.local scripts/sync-private-settings.ts",
     "config:generate": "tsx scripts/generate-game-config-seed.ts",
-    "simulate:economy": "tsx scripts/simulate-economy.ts"
+    "simulate:economy": "tsx scripts/simulate-economy.ts",
+    "db:seed:dev": "tsx scripts/db/seed-dev.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -32,10 +33,12 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
+    "pg": "^8.23.1",
     "prettier": "^3.9.10",
     "supabase": "^2.121.0",
     "tailwindcss": "^4",

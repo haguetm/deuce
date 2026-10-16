@@ -45,5 +45,19 @@ class Journal:
         self.issues_path.write_text(json.dumps(self.issues, ensure_ascii=False, indent=2))
         summary = dict(sorted(self.counters.items()))
         self.info("summary %s", json.dumps(summary))
-        self.info("log: %s | issues: %s", self.log_path, self.issues_path)
+        print(format_summary(summary, self.log_path, self.issues_path, len(self.issues)))
         return summary
+
+
+def format_summary(summary: dict, log_path: Path, issues_path: Path, issue_count: int) -> str:
+    """Human-readable end-of-run block."""
+    width = max((len(k) for k in summary), default=10)
+    lines = ["", "=" * 60, "Run summary", "-" * 60]
+    lines += [f"  {key.ljust(width)}  {value}" for key, value in summary.items()]
+    lines += [
+        "-" * 60,
+        f"  issues: {issue_count} written to {issues_path}",
+        f"  log:    {log_path}",
+        "=" * 60,
+    ]
+    return "\n".join(lines)

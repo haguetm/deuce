@@ -31,6 +31,8 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 - **2026-10-16 - Conservation des données.** Journal d'audit : 3 ans puis suppression. Demandes de retrait : nom, email et motif effacés 12 mois après traitement, sauf litige (`dispute`), l'enregistrement anonymisé est conservé. Purge quotidienne `private.purge_expired_data()` planifiée par pg_cron (03:17 UTC), elle-même journalisée.
 - **2026-10-16 - Débit du pipeline** : une requête par seconde et par hôte par défaut (`PIPELINE_MIN_INTERVAL_S`), User-Agent `DeuceDataPipeline/0.1 (<PIPELINE_CONTACT>)`, contact lu dans l'environnement.
 
+- **2026-10-16 - Données de développement fictives** (`pnpm db:seed:dev`) : 100 joueurs aux noms inventés, sans photo, statistiques plausibles, toutes les raretés représentées. Lignes marquées `players.is_dev_seed`. Un trigger refuse ces lignes sauf si la transaction déclare `app.environment = 'development'`, ce que seul le script de dev fait ; le script refuse toute base non locale. Aucune migration ni seed de production ne les contient (testé).
+
 ## Jeu
 
 - **2026-10-15 - Aces contre booster** : 100 aces = 1 booster bonus, 3 par jour maximum. Un script de simulation vérifie que le gain moyen d'aces par booster reste nettement sous 100 (aucune boucle de boosters gratuits).
