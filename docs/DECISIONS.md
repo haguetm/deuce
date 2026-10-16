@@ -41,6 +41,7 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 - **2026-10-16 - Recharge paresseuse** : +1 booster toutes les 15 minutes, calculé à la lecture ; le minuteur ne tourne pas quand le stock est plein. `open_booster` verrouille la ligne `booster_state` du joueur : 6 ouvertures simultanées sur un stock de 1 donnent 1 succès et 5 refus (vérifié en local).
 - **2026-10-16 - Idempotence des ouvertures** : identifiant de requête fourni par le client, unique par joueur ; un rejeu renvoie la première ouverture.
 - **Valeurs de recyclage (provisoire)** : Commune 1, Peu commune 3, Rare 8, Épique 25, Légendaire 80, Mythique 400 aces. Simulation (`pnpm simulate:economy`, catalogue de 4 000 cartes) : environ 1 ace par booster sur les 100 premiers, 12 à 15 entre 100 et 1 000, 30 entre 1 000 et 10 000, plafond théorique 31,7 aces par booster quand toutes les cartes sont des doublons, soit 31,7 % du prix d'un booster en aces. Il faut au moins 3,2 boosters gratuits pour en financer un : aucune boucle de boosters gratuits.
+- **Règle : relancer `pnpm simulate:economy` à chaque nouvelle source d'aces** (parrainage, succès, quêtes, marché…) et l'intégrer au modèle (`src/lib/game/economy.ts`). Le test `tests/unit/economy-sources.test.ts` échoue tant qu'une raison de crédit écrite par du code SQL n'est pas listée dans `SIMULATED_ACE_SOURCES`.
 
 ## Planning phase 1 (11 semaines utiles, absence du 26/12 au 03/01)
 

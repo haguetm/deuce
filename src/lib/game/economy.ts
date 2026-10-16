@@ -8,6 +8,13 @@ import { RARITIES, type GameConfig, type Rarity } from "@config/game";
  * faster than they are consumed (no free-booster loop).
  */
 
+/**
+ * Ledger credit reasons modeled by this simulation. When SQL code starts
+ * crediting aces for a new reason, tests/unit/economy-sources.test.ts fails
+ * until the model below covers it and this list is updated.
+ */
+export const SIMULATED_ACE_SOURCES: readonly string[] = ["recycle"];
+
 function slotTable(config: GameConfig, min: Rarity): [Rarity, number][] {
   const minIndex = RARITIES.indexOf(min);
   const allowed = RARITIES.filter((_, i) => i >= minIndex);
