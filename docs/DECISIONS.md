@@ -25,6 +25,9 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 
 - **2026-10-16 - Seuils du parrainage et de l'anti-abus hors du dépôt.** Le dépôt est public. Les seuils et poids viennent de variables d'environnement (noms dans `src/lib/server/private-settings.ts`, valeurs génériques dans `.env.example`), copiés par `pnpm settings:sync` dans `private.settings`, schéma non exposé par l'API et illisible pour les clients. Un paramètre manquant fait échouer la fonction de jeu au lieu de désactiver la protection. Les récompenses (boosters offerts) restent publiques : les joueurs doivent savoir ce qu'ils gagnent.
 
+- **2026-10-16 - Pipeline en Python, écriture directe en Postgres** (`DATABASE_URL`), upserts sur clés naturelles, corrections manuelles jamais écrasées. Sélection du mini-catalogue par nombre d'éditions Wikipédia (`wikibase:sitelinks`), même critère que le seuil du catalogue complet.
+- **2026-10-16 - Stockage local des images en développement** (`IMAGE_STORAGE_PROVIDER=local`, fichiers dans `public/card-images/`, ignorés par git). La base ne stocke que la clé de l'objet, l'URL publique vient de `NEXT_PUBLIC_IMAGE_BASE_URL`.
+
 ## Jeu
 
 - **2026-10-15 - Aces contre booster** : 100 aces = 1 booster bonus, 3 par jour maximum. Un script de simulation vérifie que le gain moyen d'aces par booster reste nettement sous 100 (aucune boucle de boosters gratuits).
@@ -60,5 +63,7 @@ Alerte si une tâche dépasse son estimation de plus de 30 %. Le temps constaté
 | --------------------- | ------ | -------- | ----- | ----------------------------------------------------------------------- |
 | T1 Socle, CI, preview | 6,5 h  | 6,5 h    | 0 %   |                                                                         |
 | T2 Schéma, RLS, pgTAP | 6 h    | 7 h      | +17 % | Docker indisponible en conteneur : banc de test PostgreSQL local ajouté |
+
+| T3a Mini-pipeline (200 joueurs) | 5 h | 4 h (code et tests) | en cours | exécution réelle bloquée : domaines Wikimedia refusés par le réseau du conteneur |
 
 Marge restante : **2 h**.

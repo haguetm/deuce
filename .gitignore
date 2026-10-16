@@ -61,5 +61,10 @@ pipeline/logs/*.log
 **/tennis_atp-*/
 **/tennis_wta-*/
 
+# images written by the pipeline in local mode
+/public/card-images/
+
 # local tools (e.g. gitleaks downloaded by scripts/scan-secrets.sh)
 /.cache/
+*.egg-info/
+.pytest_cache/
