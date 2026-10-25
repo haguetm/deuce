@@ -21,22 +21,24 @@ export function LoginForm({
 
   if (!configured) return <p role="alert">{t("notConfigured")}</p>;
 
-  const redirectTo = `${window.location.origin}/auth/callback?next=/${locale}/boosters`;
-  const supabase = createSupabaseBrowserClient();
+  // Computed on click: `window` does not exist during the server render.
+  const redirectTo = () =>
+    `${window.location.origin}/auth/callback?next=/${locale}/boosters`;
+  const supabase = () => createSupabaseBrowserClient();
 
   const oauth = async (provider: "discord" | "google") => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase().auth.signInWithOAuth({
       provider,
-      options: { redirectTo },
+      options: { redirectTo: redirectTo() },
     });
     if (error) setStatus("error");
   };
 
   const sendLink = async (event: React.FormEvent) => {
     event.preventDefault();
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase().auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: redirectTo },
+      options: { emailRedirectTo: redirectTo() },
     });
     setStatus(error ? "error" : "sent");
   };
