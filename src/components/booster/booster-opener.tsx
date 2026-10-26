@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useReducer, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { gameConfig, type PoolKey } from "@config/game";
 import { Link } from "@/i18n/navigation";
@@ -11,11 +11,11 @@ import {
   type BoosterState,
   type OpenBooster,
 } from "@/lib/game/types";
-import { BoosterPack, type PackVariant } from "./booster-pack";
 import { PoolPicker } from "./pool-picker";
 import { RevealStack } from "./reveal-stack";
 import { RevealSummary } from "./reveal-summary";
 import { StatusChips } from "./status-chips";
+import { BoosterTube } from "./tube/booster-tube";
 
 interface BoosterOpenerProps {
   initialState: BoosterState;
@@ -24,15 +24,6 @@ interface BoosterOpenerProps {
   /** Anonymous trial account: only free boosters, then link the account. */
   anonymous?: boolean;
 }
-
-const VARIANT: Record<BoosterSource, PackVariant> = {
-  free: "standard",
-  bonus: "standard",
-  aces: "standard",
-  daily: "daily",
-  box: "box",
-  qualifiers: "qualifiers",
-};
 
 /**
  * Booster lobby, opening and card-by-card reveal. The server draws and saves
@@ -97,15 +88,11 @@ export function BoosterOpener({
     [],
   );
   const onAdvance = useCallback(() => dispatch({ type: "revealNext" }), []);
+  const onEmerged = useCallback(() => dispatch({ type: "emerged" }), []);
   const onRevealAll = useCallback(() => dispatch({ type: "revealAll" }), []);
 
   const booster = state.state;
   const aces = booster.aces ?? 0;
-
-  // Interim, until the tube animates the exit: the cards are out at once.
-  useEffect(() => {
-    if (state.phase === "emerging") dispatch({ type: "emerged" });
-  }, [state.phase]);
 
   if (state.phase === "revealing") {
     return (
@@ -134,18 +121,14 @@ export function BoosterOpener({
     );
   }
 
-  const busy = state.phase === "opening";
+  const busy = state.phase === "opening" || state.phase === "emerging";
   const trialOver =
     anonymous &&
     state.phase === "idle" &&
     state.error === "link_account_required";
   const canFree = !busy && booster.stock > 0;
-  const packTitle =
-    source === "daily"
-      ? t("dailyPack")
-      : source === "box" || source === "qualifiers"
-        ? tShop(`${source}.name`)
-        : t("packLabel");
+  // While a booster opens, the tube shows its source; at rest, the free one.
+  const tubeSource = state.phase === "idle" ? "free" : source;
 
   return (
     <section
@@ -168,7 +151,7 @@ export function BoosterOpener({
         </div>
       )}
 
-      {!anonymous && booster.daily_available && (
+      {!busy && !anonymous && booster.daily_available && (
         <div className="daily-card flex w-full max-w-xl flex-col items-center gap-2 rounded-2xl border border-gold/60 px-4 py-4 text-center sm:flex-row sm:justify-between sm:text-left">
           <div>
             <p className="text-xs uppercase tracking-[0.25em] text-gold">
@@ -198,17 +181,29 @@ export function BoosterOpener({
         </div>
       )}
 
-      {!anonymous && (
+      {!busy && !anonymous && (
         <PoolPicker value={pool} onChange={setPool} disabled={busy} />
       )}
 
-      <BoosterPack
-        variant={busy ? VARIANT[source] : "standard"}
-        title={busy ? packTitle : t("packLabel")}
-        disabled={!canFree}
-        busy={busy}
-        onOpen={() => startOpening("free")}
+      <BoosterTube
+        source={tubeSource}
+        pool={pool}
+        dailyTheme={booster.daily_theme}
+        phase={
+          state.phase === "opening"
+            ? "opening"
+            : state.phase === "emerging"
+              ? "emerging"
+              : "sealed"
+        }
+        golden={state.phase === "emerging" && Boolean(state.opening.golden)}
+        disabled={!canFree && !busy}
+        onPull={() => {
+          if (canFree) startOpening("free");
+        }}
+        onEmerged={onEmerged}
       />
+      {!busy && <p className="text-xs text-cream/60">{t("pullHint")}</p>}
 
       <div className="flex flex-wrap justify-center gap-3">
         <button
@@ -250,7 +245,7 @@ export function BoosterOpener({
         </p>
       )}
 
-      {!anonymous && (
+      {!busy && !anonymous && (
         <section className="w-full max-w-3xl" aria-labelledby="shop-title">
           <h2 id="shop-title" className="mb-1 text-xl font-semibold">
             {tShop("title")}

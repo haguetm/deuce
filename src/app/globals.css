@@ -23,81 +23,129 @@ body {
   outline-offset: 2px;
 }
 
-/* --- Booster opening ------------------------------------------------- */
-.booster-pack {
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--brand-emerald) 70%, transparent),
-      var(--brand-night)
-    ),
-    var(--brand-night);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--brand-gold) 40%, transparent),
-    0 20px 40px rgb(0 0 0 / 0.4);
-  transition: transform 200ms ease;
+/* --- Booster tube (SVG fallback) ------------------------------------ */
+.tube {
+  --tube-metal-now: var(--tube-metal);
+  filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.45));
 }
-.booster-pack:not(:disabled):hover {
-  transform: translateY(-4px) rotate(-1deg);
+.tube-golden {
+  --tube-metal-now: var(--tube-gold);
 }
-.booster-pack-opening {
-  animation: pack-shake 600ms ease-in-out infinite;
+.tube-stop-dark {
+  stop-color: color-mix(in srgb, var(--tube-metal-now) 55%, var(--brand-night));
+  transition: stop-color 500ms ease;
 }
-.booster-standard {
-  border-color: var(--brand-gold);
+.tube-stop-light {
+  stop-color: color-mix(in srgb, var(--tube-metal-now) 70%, var(--brand-cream));
+  transition: stop-color 500ms ease;
 }
-.booster-daily,
-.booster-box {
-  border-color: var(--brand-gold);
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--brand-gold) 55%, transparent),
-      var(--brand-night)
-    ),
-    var(--brand-night);
+.tube-stop-mid {
+  stop-color: var(--tube-metal-now);
+  transition: stop-color 500ms ease;
 }
-.booster-qualifiers {
-  border-color: var(--rarity-rare);
+.tube-label {
+  fill: var(--pack);
 }
-
-/* Lid of the ball can: pulled up by the player, pops off while opening. */
-.booster-lid {
-  background: linear-gradient(
-    180deg,
-    var(--brand-cream),
-    color-mix(in srgb, var(--brand-cream) 60%, var(--brand-night))
-  );
-  box-shadow: 0 2px 0 color-mix(in srgb, var(--brand-night) 60%, transparent);
+.tube-wordmark {
+  fill: var(--brand-cream);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+}
+.tube-name {
+  fill: var(--brand-cream);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+.tube-ball {
+  fill: var(--brand-ball);
+}
+.tube-rim {
+  fill: color-mix(in srgb, var(--tube-metal-now) 60%, var(--brand-night));
+}
+.tube-foil {
+  fill: var(--tube-aluminium);
+}
+.tube-ring {
+  fill: none;
+  stroke: var(--tube-aluminium);
+  stroke-width: 3;
   cursor: grab;
-  transition: transform 150ms ease-out;
 }
-.booster-lid-pop {
-  animation: lid-pop 700ms ease-in forwards;
+.tube-seal {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  transition:
+    transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 400ms ease;
 }
-@keyframes lid-pop {
+/* Mid-course while the server answers, with a faint shimmer. */
+.tube-opening .tube-seal {
+  transform: translateY(-16px) rotate(-14deg) scaleY(0.6);
+  animation: seal-wait 900ms ease-in-out infinite alternate;
+}
+@keyframes seal-wait {
+  to {
+    opacity: 0.75;
+  }
+}
+.tube-emerging .tube-seal {
+  transform: translateY(-140px) rotate(-40deg) scaleY(0.4);
+  opacity: 0;
+  transition-delay: var(--tube-gold-delay, 0ms);
+}
+.tube-golden {
+  --tube-gold-delay: 500ms;
+}
+.tube-puff {
+  fill: color-mix(in srgb, var(--tube-puff) 70%, transparent);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.tube-emerging .tube-puff {
+  animation: puff 400ms ease-out both;
+  animation-delay: var(--tube-gold-delay, 0ms);
+}
+@keyframes puff {
   0% {
-    transform: translate(-50%, 0) rotate(0deg);
-  }
-  40% {
-    transform: translate(-50%, -40px) rotate(-12deg);
+    opacity: 0.9;
+    transform: translate(0, 0) scale(0.4);
   }
   100% {
-    transform: translate(-50%, -160px) rotate(-40deg);
     opacity: 0;
+    transform: translate(var(--dx), -60px) scale(2.2);
   }
 }
-@keyframes pack-shake {
-  0%,
-  100% {
-    transform: rotate(0deg);
+.tube-card {
+  fill: var(--brand-emerald);
+  stroke: var(--brand-gold);
+  stroke-width: 2;
+  transform: translateY(0);
+}
+.tube-emerging .tube-card {
+  animation: card-rise 500ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--tube-gold-delay, 0ms) + 400ms);
+}
+@keyframes card-rise {
+  to {
+    transform: translateY(-190px);
   }
-  25% {
-    transform: rotate(-3deg) scale(1.02);
-  }
-  75% {
-    transform: rotate(3deg) scale(1.02);
-  }
+}
+/* Reduced motion: no movement, the seal and the cards fade. */
+.tube-reduced .tube-seal,
+.tube-reduced.tube-opening .tube-seal {
+  transform: none;
+  animation: none;
+}
+.tube-reduced.tube-emerging .tube-seal {
+  transform: none;
+  transition: opacity 300ms ease;
+}
+.tube-reduced .tube-puff,
+.tube-reduced .tube-card {
+  animation: none;
+  display: none;
 }
 
 /* Face-up stack out of the tube: the halo tells the pair of rarities and
@@ -245,8 +293,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .booster-pack-opening,
-  .booster-lid-pop,
   .frame-draw,
   .frame-shine::after,
   .card-wished,
