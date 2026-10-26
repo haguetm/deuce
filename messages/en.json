@@ -73,7 +73,6 @@
     "openBonus": "Open a bonus booster",
     "opening": "Tearing the wrapper…",
     "packLabel": "Sealed booster",
-    "tapToReveal": "Flip the next card",
     "revealAll": "Reveal all",
     "again": "Open the next one",
     "close": "Back to boosters",
@@ -94,7 +93,6 @@
     "nextCard": "Next card",
     "goldenBooster": "Golden booster!",
     "wished": "Wished!",
-    "hintFlip": "Tap the card to flip it",
     "hintNext": "Tap or swipe for the next one",
     "keyboardHint": "Space or right arrow: next",
     "dailyPack": "Daily booster",
@@ -107,7 +105,8 @@
     "haveAccount": "I already have an account",
     "tryWithoutAccount": "Try without an account",
     "trialCookie": "A session cookie is created at that point, only to keep your trial cards.",
-    "trialError": "The trial cannot start right now. Try again or sign in."
+    "trialError": "The trial cannot start right now. Try again or sign in.",
+    "moreCards": "+{count}"
   },
   "card": {
     "silhouette": "Photo unavailable",
@@ -523,7 +522,7 @@
       "2026-10-26": {
         "title": "Golden boosters, missions and collection",
         "items": {
-          "reveal": "New opening: pull the lid, then the cards are revealed one by one. Their back glows in their rarity color.",
+          "reveal": "New opening: cards come out face up, stacked. Their halo hints at a pair of rarities, and their frame shows the exact rarity once on top.",
           "golden": "Golden booster: about one booster in 20, guaranteed by the 30th at the latest. Its last card is better.",
           "pity": "Top rarity guaranteed by the 300th booster at the latest, with a visible counter.",
           "daily": "Free daily booster, with a theme that follows the tennis calendar.",

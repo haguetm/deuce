@@ -73,7 +73,6 @@
     "openBonus": "Ouvrir un booster bonus",
     "opening": "Déchirage de l'emballage…",
     "packLabel": "Booster scellé",
-    "tapToReveal": "Retourner la carte suivante",
     "revealAll": "Tout révéler",
     "again": "Ouvrir le suivant",
     "close": "Revenir aux boosters",
@@ -94,7 +93,6 @@
     "nextCard": "Carte suivante",
     "goldenBooster": "Booster doré !",
     "wished": "Souhaitée !",
-    "hintFlip": "Touche la carte pour la retourner",
     "hintNext": "Touche ou glisse pour la suivante",
     "keyboardHint": "Espace ou flèche droite : suivante",
     "dailyPack": "Booster du jour",
@@ -107,7 +105,8 @@
     "haveAccount": "J'ai déjà un compte",
     "tryWithoutAccount": "Essayer sans compte",
     "trialCookie": "Un cookie de session est créé à ce moment-là, uniquement pour garder tes cartes d'essai.",
-    "trialError": "Impossible de démarrer l'essai pour le moment. Réessaie ou connecte-toi."
+    "trialError": "Impossible de démarrer l'essai pour le moment. Réessaie ou connecte-toi.",
+    "moreCards": "+{count}"
   },
   "card": {
     "silhouette": "Photo indisponible",
@@ -523,7 +522,7 @@
       "2026-10-26": {
         "title": "Boosters dorés, missions et collection",
         "items": {
-          "reveal": "Nouvelle ouverture : tire le couvercle, puis les cartes se révèlent une à une. Leur dos brille de la couleur de leur rareté.",
+          "reveal": "Nouvelle ouverture : les cartes sortent face visible, empilées. Leur halo indique une paire de raretés, et leur cadre la rareté exacte une fois découvertes.",
           "golden": "Booster doré : environ un booster sur 20, garanti au 30e au plus tard. Sa dernière carte est meilleure.",
           "pity": "Garantie de rareté maximale au 300e booster au plus tard, compteur visible.",
           "daily": "Booster du jour gratuit, avec un thème qui suit le calendrier du tennis.",

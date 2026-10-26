@@ -100,37 +100,62 @@ body {
   }
 }
 
-.card-slot {
-  perspective: 1000px;
+/* Face-up stack out of the tube: the halo tells the pair of rarities and
+   never changes; the frame tells the exact rarity once the card is on top.
+   Only transform and opacity move, so the GPU does the work. */
+.stack-card {
+  transition:
+    transform 350ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 350ms ease;
 }
-.card-flip {
-  display: grid;
-  transform-style: preserve-3d;
-  transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+.stack-gone {
+  transform: translateY(-120%) rotate(-4deg);
+  opacity: 0;
+  pointer-events: none;
 }
-.card-flip.is-revealed {
-  transform: rotateY(180deg);
+.glow-1 {
+  box-shadow: 0 0 18px 2px color-mix(in srgb, var(--glow-1) 70%, transparent);
 }
-.card-face {
-  grid-area: 1 / 1;
-  backface-visibility: hidden;
+.glow-2 {
+  box-shadow: 0 0 22px 3px color-mix(in srgb, var(--glow-2) 75%, transparent);
 }
-.card-front {
-  transform: rotateY(180deg);
+.glow-3 {
+  box-shadow: 0 0 28px 4px color-mix(in srgb, var(--glow-3) 85%, transparent);
 }
-
-/* Each new card slides onto the stage. */
-.card-enter {
-  animation: card-enter 280ms ease-out;
+.frame-draw {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--card-rarity);
+  border-radius: 0.75rem;
+  pointer-events: none;
+  overflow: hidden;
+  animation: frame-draw 300ms ease-out both;
 }
-@keyframes card-enter {
+@keyframes frame-draw {
   from {
-    opacity: 0;
-    translate: 40px 0;
+    clip-path: inset(0 0 100% 0);
   }
   to {
-    opacity: 1;
-    translate: 0 0;
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* Better rarity of its pair: one shine runs along the frame. */
+.frame-shine::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    color-mix(in srgb, var(--brand-cream) 80%, transparent) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: frame-shine 900ms 250ms ease-out both;
+}
+@keyframes frame-shine {
+  to {
+    transform: translateX(120%);
   }
 }
 
@@ -181,21 +206,6 @@ body {
   }
 }
 
-/* Rarity tease: the card back glows in its rarity color before the flip
-   (rare and better). */
-.card-tease {
-  animation: tease 1.2s ease-in-out infinite;
-}
-@keyframes tease {
-  0%,
-  100% {
-    box-shadow: 0 0 8px var(--card-rarity);
-  }
-  50% {
-    box-shadow: 0 0 28px var(--card-rarity);
-  }
-}
-
 /* Discreet holographic finish on epic and above. */
 .card-holo::after {
   content: "";
@@ -237,14 +247,18 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .booster-pack-opening,
   .booster-lid-pop,
-  .card-tease,
-  .card-enter,
+  .frame-draw,
+  .frame-shine::after,
   .card-wished,
   .ticker-track,
   .card-holo::after {
     animation: none;
   }
-  .card-flip {
-    transition: none;
+  /* Fades only: the top card leaves without moving. */
+  .stack-card {
+    transition: opacity 200ms ease;
+  }
+  .stack-gone {
+    transform: none;
   }
 }

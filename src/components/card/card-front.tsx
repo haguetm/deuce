@@ -20,6 +20,11 @@ interface CardFrontProps {
   missing?: boolean;
   /** Compact layout for grids and thumbnails (no credit line). */
   compact?: boolean;
+  /**
+   * Card still covered in the booster stack: neutral frame, no rarity chip,
+   * no rarity text, no holo, no badge. Nothing tells its exact rarity.
+   */
+  concealed?: boolean;
 }
 
 /**
@@ -39,13 +44,18 @@ export function CardFront({
   catalogSize,
   missing = false,
   compact = false,
+  concealed = false,
 }: CardFrontProps) {
   const t = useTranslations();
   const src = imageUrl(image);
+  const frameColor = concealed
+    ? "color-mix(in srgb, var(--brand-cream) 25%, transparent)"
+    : `var(--rarity-${rarity})`;
+  const holo = isHighRarity(rarity) && !missing && !concealed;
   return (
     <figure
-      className={`card-frame relative flex aspect-[5/7] w-full flex-col overflow-hidden rounded-xl border-2 border-[color:var(--card-rarity)] bg-night ${isHighRarity(rarity) && !missing ? "card-holo" : ""} ${missing ? "opacity-60 grayscale" : ""}`}
-      style={{ ["--card-rarity" as string]: `var(--rarity-${rarity})` }}
+      className={`card-frame relative flex aspect-[5/7] w-full flex-col overflow-hidden rounded-xl border-2 border-[color:var(--card-rarity)] bg-night ${holo ? "card-holo" : ""} ${missing ? "opacity-60 grayscale" : ""}`}
+      style={{ ["--card-rarity" as string]: frameColor }}
     >
       <div className="relative m-1.5 flex-1 overflow-hidden rounded-lg border border-[color:var(--card-rarity)] bg-cream/5">
         {src && !missing ? (
@@ -75,13 +85,15 @@ export function CardFront({
             </svg>
           </div>
         )}
-        <span
-          className="absolute right-1.5 top-1.5 rounded-full bg-[color:var(--card-rarity)] px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none text-night"
-          title={t(`rarity.${rarity}`)}
-        >
-          {t(`rarityShort.${rarity}`)}
-        </span>
-        {(badge || highlight) && (
+        {!concealed && (
+          <span
+            className="absolute right-1.5 top-1.5 rounded-full bg-[color:var(--card-rarity)] px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none text-night"
+            title={t(`rarity.${rarity}`)}
+          >
+            {t(`rarityShort.${rarity}`)}
+          </span>
+        )}
+        {!concealed && (badge || highlight) && (
           <span className="absolute left-1.5 top-1.5 flex flex-col items-start gap-1">
             {highlight && (
               <span className="card-wished rounded-full bg-gold px-2 py-0.5 text-xs font-bold text-night">
@@ -116,7 +128,7 @@ export function CardFront({
         <span
           className={`font-medium uppercase tracking-wider text-[color:var(--card-rarity)] ${compact ? "text-[10px]" : "text-xs"}`}
         >
-          {t(`rarity.${rarity}`)}
+          {concealed ? "\u00a0" : t(`rarity.${rarity}`)}
         </span>
         {image && !missing && (
           <a

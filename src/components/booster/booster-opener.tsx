@@ -13,7 +13,7 @@ import {
 } from "@/lib/game/types";
 import { BoosterPack, type PackVariant } from "./booster-pack";
 import { PoolPicker } from "./pool-picker";
-import { RevealStage } from "./reveal-stage";
+import { RevealStack } from "./reveal-stack";
 import { RevealSummary } from "./reveal-summary";
 import { StatusChips } from "./status-chips";
 
@@ -109,7 +109,7 @@ export function BoosterOpener({
 
   if (state.phase === "revealing") {
     return (
-      <RevealStage
+      <RevealStack
         cards={revealOrder(state.opening.cards)}
         cursor={state.cursor}
         golden={Boolean(state.opening.golden)}
