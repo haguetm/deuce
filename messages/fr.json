@@ -154,8 +154,8 @@
   "pools": {
     "legend": "Choisis ton booster gratuit (même stock, mêmes chances)",
     "all": "Tous",
-    "atp": "ATP",
-    "wta": "WTA",
+    "men": "Messieurs",
+    "women": "Dames",
     "legends": "Légendes"
   },
   "dailyThemes": {
@@ -169,7 +169,7 @@
     "birthdays": "Joyeux anniversaire",
     "legends": "Les légendes",
     "nineties": "Nés dans les années 70",
-    "wta": "Spécial WTA",
+    "women": "Spécial Dames",
     "clayCourters": "Spécialistes de la terre",
     "nextGen": "La relève"
   },
@@ -527,7 +527,7 @@
           "golden": "Booster doré : environ un booster sur 20, garanti au 30e au plus tard. Sa dernière carte est meilleure.",
           "pity": "Garantie de rareté maximale au 300e booster au plus tard, compteur visible.",
           "daily": "Booster du jour gratuit, avec un thème qui suit le calendrier du tennis.",
-          "pools": "Choix du booster gratuit : Tous, ATP, WTA ou Légendes.",
+          "pools": "Choix du booster gratuit : Tous, Messieurs, Dames ou Légendes.",
           "shop": "Boutique en aces : Coffret de 20 cartes et Qualifs.",
           "collection": "Page Collection : albums par nation, collections, liste de souhaits, recyclage en un clic, gradation.",
           "missions": "Missions : série de connexion sur 7 jours, missions du jour, premiers pas et succès.",

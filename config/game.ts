@@ -186,8 +186,8 @@ export const gameConfig = {
    */
   pools: {
     all: {},
-    atp: { sex: "male" },
-    wta: { sex: "female" },
+    men: { sex: "male" },
+    women: { sex: "female" },
     legends: { careerEndBefore: 1990 },
   } satisfies Record<string, CardPool>,
 
@@ -226,7 +226,7 @@ export const gameConfig = {
       { key: "birthdays", pool: { birthday: true } },
       { key: "legends", pool: { careerEndBefore: 1990 } },
       { key: "nineties", pool: { bornFrom: 1970, bornTo: 1979 } },
-      { key: "wta", pool: { sex: "female" } },
+      { key: "women", pool: { sex: "female" } },
       { key: "clayCourters", pool: { surface: "clay" } },
       { key: "nextGen", pool: { bornFrom: 1998, bornTo: 2010 } },
     ] satisfies DailyTheme[],

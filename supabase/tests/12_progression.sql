@@ -78,11 +78,11 @@ update public.game_config set value = jsonb_set(value, '{guaranteed_slot_min_rar
 -- Pools ----------------------------------------------------------------------
 set local role authenticated;
 select pg_temp.as_user('11111111-1111-1111-1111-111111111111');
-insert into results (body) select public.open_booster('free', 'pool-0001', 'wta');
+insert into results (body) select public.open_booster('free', 'pool-0001', 'women');
 select is((select count(*)::int from jsonb_array_elements((select body -> 'cards' from results where n = 7)) c
            join public.players p on p.id = (c ->> 'player_id')::bigint where p.sex = 'female'), 5,
-  'the WTA pool only draws women');
-select is((select body ->> 'pool' from results where n = 7), 'wta', 'the pool is recorded');
+  'the women pool only draws women');
+select is((select body ->> 'pool' from results where n = 7), 'women', 'the pool is recorded');
 select throws_ok($$select public.open_booster('free', 'pool-0002', 'nope')$$, 'P0001', 'invalid_pool',
   'unknown pools are refused');
 reset role;
