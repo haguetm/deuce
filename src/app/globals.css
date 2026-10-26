@@ -43,6 +43,50 @@ body {
 .booster-pack-opening {
   animation: pack-shake 600ms ease-in-out infinite;
 }
+.booster-standard {
+  border-color: var(--brand-gold);
+}
+.booster-daily,
+.booster-box {
+  border-color: var(--brand-gold);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--brand-gold) 55%, transparent),
+      var(--brand-night)
+    ),
+    var(--brand-night);
+}
+.booster-qualifiers {
+  border-color: var(--rarity-rare);
+}
+
+/* Lid of the ball can: pulled up by the player, pops off while opening. */
+.booster-lid {
+  background: linear-gradient(
+    180deg,
+    var(--brand-cream),
+    color-mix(in srgb, var(--brand-cream) 60%, var(--brand-night))
+  );
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--brand-night) 60%, transparent);
+  cursor: grab;
+  transition: transform 150ms ease-out;
+}
+.booster-lid-pop {
+  animation: lid-pop 700ms ease-in forwards;
+}
+@keyframes lid-pop {
+  0% {
+    transform: translate(-50%, 0) rotate(0deg);
+  }
+  40% {
+    transform: translate(-50%, -40px) rotate(-12deg);
+  }
+  100% {
+    transform: translate(-50%, -160px) rotate(-40deg);
+    opacity: 0;
+  }
+}
 @keyframes pack-shake {
   0%,
   100% {
@@ -75,7 +119,70 @@ body {
   transform: rotateY(180deg);
 }
 
-/* High-rarity tease: the card back glows in its rarity color before the flip. */
+/* Each new card slides onto the stage. */
+.card-enter {
+  animation: card-enter 280ms ease-out;
+}
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    translate: 40px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.golden-banner {
+  background: color-mix(in srgb, var(--brand-gold) 15%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--brand-gold) 50%, transparent);
+}
+.daily-card {
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--brand-gold) 18%, transparent),
+    transparent 70%
+  );
+}
+.card-wished {
+  animation: wished 1.4s ease-in-out infinite;
+}
+@keyframes wished {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+.summary-fan-card {
+  transition: transform 200ms ease;
+}
+.summary-fan-card:hover {
+  z-index: 20;
+  translate: 0 -8px;
+}
+
+/* Big pulls ticker. */
+.ticker-track {
+  animation: ticker 40s linear infinite;
+}
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Rarity tease: the card back glows in its rarity color before the flip
+   (rare and better). */
 .card-tease {
   animation: tease 1.2s ease-in-out infinite;
 }
@@ -115,9 +222,25 @@ body {
   }
 }
 
+/* Grids of cards (collection, summaries): lighter on phones, the holo only
+   plays on the card on stage. Off-screen grid cells are not rendered. */
+.card-grid > li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 220px;
+}
+@media (max-width: 640px), (pointer: coarse) {
+  .card-grid .card-holo::after {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .booster-pack-opening,
+  .booster-lid-pop,
   .card-tease,
+  .card-enter,
+  .card-wished,
+  .ticker-track,
   .card-holo::after {
     animation: none;
   }

@@ -1,54 +1,81 @@
 "use client";
 
-import { useCallback, useReducer, useRef } from "react";
+import { useCallback, useReducer, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { gameConfig } from "@config/game";
-import { CardFront } from "@/components/card/card-front";
+import { gameConfig, type PoolKey } from "@config/game";
+import { Link } from "@/i18n/navigation";
+import { initialReveal, revealOrder, revealReducer } from "@/lib/game/reveal";
 import {
-  bestCard,
-  initialReveal,
-  isHighRarity,
-  revealOrder,
-  revealReducer,
-} from "@/lib/game/reveal";
-import type {
-  BoosterSource,
-  BoosterState,
-  OpenResponse,
+  imageUrl,
+  type BoosterSource,
+  type BoosterState,
+  type OpenBooster,
 } from "@/lib/game/types";
-import { RefillCountdown } from "./refill-countdown";
+import { BoosterPack, type PackVariant } from "./booster-pack";
+import { PoolPicker } from "./pool-picker";
+import { RevealStage } from "./reveal-stage";
+import { RevealSummary } from "./reveal-summary";
+import { StatusChips } from "./status-chips";
 
 interface BoosterOpenerProps {
   initialState: BoosterState;
-  open: (source: BoosterSource, requestId: string) => Promise<OpenResponse>;
+  open: OpenBooster;
+  share?: (openingId: string) => Promise<boolean>;
+  /** Anonymous trial account: only free boosters, then link the account. */
+  anonymous?: boolean;
 }
 
+const VARIANT: Record<BoosterSource, PackVariant> = {
+  free: "standard",
+  bonus: "standard",
+  aces: "standard",
+  daily: "daily",
+  box: "box",
+  qualifiers: "qualifiers",
+};
+
 /**
- * Booster opening and card-by-card reveal. The server draws and saves the
- * cards before anything is shown; this component only stages the reveal.
+ * Booster lobby, opening and card-by-card reveal. The server draws and saves
+ * the cards before anything is shown; this component only stages the reveal.
  */
-export function BoosterOpener({ initialState, open }: BoosterOpenerProps) {
+export function BoosterOpener({
+  initialState,
+  open,
+  share,
+  anonymous = false,
+}: BoosterOpenerProps) {
   const t = useTranslations("booster");
+  const tShop = useTranslations("shop");
+  const tThemes = useTranslations("dailyThemes");
   const tRarity = useTranslations("rarity");
   const [state, dispatch] = useReducer(
     revealReducer,
     initialState,
     initialReveal,
   );
+  const [pool, setPool] = useState<PoolKey>("all");
+  const [source, setSource] = useState<BoosterSource>("free");
   // Same request id until the server answers, so a retry after a network
   // error replays the same opening instead of opening a second booster.
-  const pendingRequest = useRef<{ source: BoosterSource; id: string } | null>(
-    null,
-  );
+  const pendingRequest = useRef<{ key: string; id: string } | null>(null);
   const startOpening = useCallback(
-    async (source: BoosterSource) => {
-      if (!pendingRequest.current || pendingRequest.current.source !== source) {
-        pendingRequest.current = { source, id: crypto.randomUUID() };
+    async (next: BoosterSource) => {
+      const key = `${next}:${pool}`;
+      if (!pendingRequest.current || pendingRequest.current.key !== key) {
+        pendingRequest.current = { key, id: crypto.randomUUID() };
       }
+      setSource(next);
       dispatch({ type: "open" });
       try {
-        const response = await open(source, pendingRequest.current.id);
+        const response = await open(next, pendingRequest.current.id, pool);
         pendingRequest.current = null;
+        // Load every photo now, so none pops in during the reveal.
+        if (response.ok) {
+          for (const card of response.opening.cards) {
+            const src = imageUrl(card.image);
+            if (src) new Image().src = src;
+          }
+        }
         dispatch(
           response.ok
             ? { type: "opened", opening: response.opening }
@@ -58,7 +85,7 @@ export function BoosterOpener({ initialState, open }: BoosterOpenerProps) {
         dispatch({ type: "failed", error: "unknown" });
       }
     },
-    [open],
+    [open, pool],
   );
 
   const onRefill = useCallback(
@@ -69,192 +96,240 @@ export function BoosterOpener({ initialState, open }: BoosterOpenerProps) {
       }),
     [],
   );
+  const onAdvance = useCallback(() => dispatch({ type: "revealNext" }), []);
+  const onRevealAll = useCallback(() => dispatch({ type: "revealAll" }), []);
 
   const booster = state.state;
-  const status = (
-    <div className="flex flex-col items-center gap-1 text-center">
-      <p className="text-lg font-semibold">
-        {t("stock", { count: booster.stock })}{" "}
-        <span className="text-sm font-normal text-cream/60">
-          {t("stockOf", { max: booster.max_stock })}
-        </span>
-      </p>
-      {booster.next_refill_at ? (
-        <p className="text-sm text-cream/70">
-          {t.rich("nextRefill", {
-            countdown: () => (
-              <RefillCountdown
-                target={booster.next_refill_at!}
-                onElapsed={onRefill}
-              />
-            ),
-          })}
-        </p>
-      ) : (
-        <p className="text-sm text-cream/70">{t("full")}</p>
-      )}
-      {booster.bonus_stock > 0 && (
-        <p className="text-sm text-ball">
-          {t("bonus", { count: booster.bonus_stock })}
-        </p>
-      )}
-    </div>
-  );
+  const aces = booster.aces ?? 0;
 
-  if (state.phase === "idle" || state.phase === "opening") {
-    const busy = state.phase === "opening";
+  if (state.phase === "revealing") {
     return (
-      <section className="flex flex-col items-center gap-6" aria-busy={busy}>
-        {status}
-        <button
-          type="button"
-          onClick={() => startOpening("free")}
-          disabled={busy || booster.stock < 1}
-          aria-label={t("open")}
-          className={`booster-pack group relative aspect-[5/7] w-48 rounded-2xl border-2 border-gold disabled:opacity-50 ${busy ? "booster-pack-opening" : ""}`}
-        >
-          <span className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <span
-              className="h-12 w-12 rounded-full bg-ball shadow-[0_0_24px_var(--brand-ball)]"
-              aria-hidden="true"
-            />
-            <span className="text-xs uppercase tracking-[0.3em] text-cream/80">
-              {t("packLabel")}
-            </span>
-          </span>
-        </button>
-        <div className="flex flex-wrap justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => startOpening("free")}
-            disabled={busy || booster.stock < 1}
-            className="rounded-full bg-ball px-6 py-3 font-semibold text-night disabled:opacity-40"
-          >
-            {t("open")}
-          </button>
-          {booster.bonus_stock > 0 && (
-            <button
-              type="button"
-              onClick={() => startOpening("bonus")}
-              disabled={busy}
-              className="rounded-full border border-ball px-6 py-3 font-semibold text-ball disabled:opacity-40"
-            >
-              {t("openBonus")}
-            </button>
-          )}
-        </div>
-        <p aria-live="polite" className="min-h-6 text-sm text-cream/70">
-          {busy ? t("opening") : ""}
-        </p>
-        {state.phase === "idle" && state.error && (
-          <p
-            role="alert"
-            className="rounded-lg border border-gold/50 px-4 py-2 text-sm text-cream"
-          >
-            {t(`errors.${state.error}`)}
-          </p>
-        )}
-      </section>
+      <RevealStage
+        cards={revealOrder(state.opening.cards)}
+        revealed={state.revealed}
+        cursor={state.cursor}
+        golden={Boolean(state.opening.golden)}
+        catalogSize={state.opening.catalog_size}
+        onAdvance={onAdvance}
+        onRevealAll={onRevealAll}
+      />
     );
   }
 
-  const cards = revealOrder(state.opening.cards);
-  const revealedCount = state.phase === "done" ? cards.length : state.revealed;
-  const best = bestCard(cards);
-  const lastRevealed = revealedCount > 0 ? cards[revealedCount - 1] : null;
+  if (state.phase === "done") {
+    return (
+      <RevealSummary
+        opening={{
+          ...state.opening,
+          cards: revealOrder(state.opening.cards),
+        }}
+        canOpenAgain={booster.stock > 0 || booster.bonus_stock > 0}
+        onAgain={() => dispatch({ type: "again" })}
+        share={anonymous ? undefined : share}
+      />
+    );
+  }
+
+  const busy = state.phase === "opening";
+  const trialOver =
+    anonymous &&
+    state.phase === "idle" &&
+    state.error === "link_account_required";
+  const canFree = !busy && booster.stock > 0;
+  const packTitle =
+    source === "daily"
+      ? t("dailyPack")
+      : source === "box" || source === "qualifiers"
+        ? tShop(`${source}.name`)
+        : t("packLabel");
 
   return (
-    <section className="flex w-full flex-col items-center gap-6">
-      <ol className="grid w-full max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {cards.map((card, index) => {
-          const isRevealed = index < revealedCount;
-          const isNext = state.phase === "revealing" && index === revealedCount;
-          return (
-            <li
-              key={card.slot}
-              className="card-slot"
-              aria-label={t("cardOf", {
-                index: index + 1,
-                total: cards.length,
-              })}
-            >
-              <div className={`card-flip ${isRevealed ? "is-revealed" : ""}`}>
-                <div className="card-face card-back">
-                  <button
-                    type="button"
-                    disabled={!isNext}
-                    onClick={() => dispatch({ type: "revealNext" })}
-                    aria-label={t("tapToReveal")}
-                    className={`flex aspect-[5/7] w-full items-center justify-center rounded-xl border-2 border-gold bg-emerald/40 ${isNext && isHighRarity(card.rarity) ? "card-tease" : ""}`}
-                    style={{
-                      ["--card-rarity" as string]: `var(--rarity-${card.rarity})`,
-                    }}
-                  >
-                    <span
-                      className="h-10 w-10 rounded-full bg-ball/80"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
-                <div className="card-face card-front" aria-hidden={!isRevealed}>
-                  {isRevealed && (
-                    <CardFront
-                      name={card.name}
-                      countryCode={card.country_code}
-                      rarity={card.rarity}
-                      image={card.image}
-                      badge={card.was_new ? t("new") : t("duplicate")}
-                    />
-                  )}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+    <section
+      className="flex w-full flex-col items-center gap-6"
+      aria-busy={busy}
+    >
+      <StatusChips state={booster} onRefill={onRefill} />
 
-      <p aria-live="polite" className="sr-only">
-        {lastRevealed &&
-          `${lastRevealed.name}, ${tRarity(lastRevealed.rarity)}`}
-      </p>
-
-      {state.phase === "revealing" ? (
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => dispatch({ type: "revealNext" })}
-            className="rounded-full bg-ball px-6 py-3 font-semibold text-night"
+      {anonymous && (
+        <div className="w-full max-w-xl rounded-xl border border-ball/50 bg-ball/10 px-4 py-3 text-center text-sm">
+          <p>
+            {t("trialNotice", { count: gameConfig.anonymousTrial.boosters })}
+          </p>
+          <Link
+            href="/login"
+            className="mt-2 inline-block font-semibold text-ball underline"
           >
-            {t("tapToReveal")}
-          </button>
-          <button
-            type="button"
-            onClick={() => dispatch({ type: "revealAll" })}
-            className="rounded-full border border-cream/40 px-6 py-3 text-cream"
-          >
-            {t("revealAll")}
-          </button>
+            {t("linkAccount")}
+          </Link>
         </div>
-      ) : (
-        <div className="flex flex-col items-center gap-3">
-          <h2 className="text-xl font-semibold text-gold">
-            {t("summaryTitle")}
-          </h2>
-          {best && (
-            <p className="text-cream/80">
-              {t("bestPull", { name: best.name })}
+      )}
+
+      {!anonymous && booster.daily_available && (
+        <div className="daily-card flex w-full max-w-xl flex-col items-center gap-2 rounded-2xl border border-gold/60 px-4 py-4 text-center sm:flex-row sm:justify-between sm:text-left">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-gold">
+              {t("dailyKicker")}
             </p>
-          )}
-          {status}
+            <p className="text-lg font-semibold">
+              {booster.daily_theme
+                ? tThemes(booster.daily_theme)
+                : t("dailyPack")}
+            </p>
+            <p className="text-sm text-cream/70">
+              {t("dailyGuarantee", {
+                rarity: tRarity(
+                  gameConfig.dailyBooster.guaranteedSlotMinRarity,
+                ),
+              })}
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => dispatch({ type: "again" })}
-            className="rounded-full bg-ball px-6 py-3 font-semibold text-night"
+            onClick={() => startOpening("daily")}
+            disabled={busy}
+            className="rounded-full bg-gold px-5 py-2 font-semibold text-night disabled:opacity-40"
           >
-            {booster.stock > 0 ? t("again") : t("close")}
+            {t("openDaily")}
           </button>
         </div>
       )}
+
+      {!anonymous && (
+        <PoolPicker value={pool} onChange={setPool} disabled={busy} />
+      )}
+
+      <BoosterPack
+        variant={busy ? VARIANT[source] : "standard"}
+        title={busy ? packTitle : t("packLabel")}
+        disabled={!canFree}
+        busy={busy}
+        onOpen={() => startOpening("free")}
+      />
+
+      <div className="flex flex-wrap justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => startOpening("free")}
+          disabled={!canFree}
+          className="rounded-full bg-ball px-6 py-3 font-semibold text-night disabled:opacity-40"
+        >
+          {t("open")}
+        </button>
+        {booster.bonus_stock > 0 && (
+          <button
+            type="button"
+            onClick={() => startOpening("bonus")}
+            disabled={busy}
+            className="rounded-full border border-ball px-6 py-3 font-semibold text-ball disabled:opacity-40"
+          >
+            {t("openBonus")}
+          </button>
+        )}
+      </div>
+      <p aria-live="polite" className="min-h-6 text-sm text-cream/70">
+        {busy ? t("opening") : ""}
+      </p>
+      {state.phase === "idle" && state.error && (
+        <p
+          role="alert"
+          className="rounded-lg border border-gold/50 px-4 py-2 text-sm text-cream"
+        >
+          {t(`errors.${state.error}`)}
+          {trialOver && (
+            <>
+              {" "}
+              <Link href="/login" className="font-semibold text-ball underline">
+                {t("linkAccount")}
+              </Link>
+            </>
+          )}
+        </p>
+      )}
+
+      {!anonymous && (
+        <section className="w-full max-w-3xl" aria-labelledby="shop-title">
+          <h2 id="shop-title" className="mb-1 text-xl font-semibold">
+            {tShop("title")}
+          </h2>
+          <p className="mb-3 text-sm text-cream/60">{tShop("subtitle")}</p>
+          <ul className="grid gap-3 sm:grid-cols-3">
+            <ShopItem
+              name={tShop("aces.name")}
+              description={tShop("aces.description")}
+              price={gameConfig.acesBooster.price}
+              left={tShop("leftToday", { count: booster.aces_purchases_left })}
+              disabled={
+                busy ||
+                booster.aces_purchases_left < 1 ||
+                aces < gameConfig.acesBooster.price
+              }
+              onBuy={() => startOpening("aces")}
+            />
+            <ShopItem
+              name={tShop("box.name")}
+              description={tShop("box.description", {
+                cards: gameConfig.shop.box.cards,
+                rarity: tRarity(gameConfig.shop.box.guaranteedSlotMinRarity),
+              })}
+              price={gameConfig.shop.box.price}
+              left={tShop("leftWeek", { count: booster.box_left ?? 0 })}
+              disabled={
+                busy ||
+                (booster.box_left ?? 0) < 1 ||
+                aces < gameConfig.shop.box.price
+              }
+              onBuy={() => startOpening("box")}
+            />
+            <ShopItem
+              name={tShop("qualifiers.name")}
+              description={tShop("qualifiers.description", {
+                cards: gameConfig.shop.qualifiers.cards,
+              })}
+              price={gameConfig.shop.qualifiers.price}
+              left={tShop("leftToday", { count: booster.qualifiers_left ?? 0 })}
+              disabled={
+                busy ||
+                (booster.qualifiers_left ?? 0) < 1 ||
+                aces < gameConfig.shop.qualifiers.price
+              }
+              onBuy={() => startOpening("qualifiers")}
+            />
+          </ul>
+        </section>
+      )}
     </section>
+  );
+}
+
+function ShopItem({
+  name,
+  description,
+  price,
+  left,
+  disabled,
+  onBuy,
+}: {
+  name: string;
+  description: string;
+  price: number;
+  left: string;
+  disabled: boolean;
+  onBuy: () => void;
+}) {
+  const t = useTranslations("shop");
+  return (
+    <li className="flex flex-col gap-2 rounded-xl border border-cream/20 p-4">
+      <p className="font-semibold">{name}</p>
+      <p className="flex-1 text-sm text-cream/70">{description}</p>
+      <p className="text-xs text-cream/50">{left}</p>
+      <button
+        type="button"
+        onClick={onBuy}
+        disabled={disabled}
+        className="rounded-full border border-gold px-4 py-2 text-sm font-semibold text-gold disabled:opacity-40"
+      >
+        {t("buy", { price })}
+      </button>
+    </li>
   );
 }

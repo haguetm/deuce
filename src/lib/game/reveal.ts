@@ -1,3 +1,4 @@
+import { gameConfig, RARITIES, type Rarity } from "@config/game";
 import type {
   BoosterState,
   DrawnCard,
@@ -8,6 +9,9 @@ import type {
 /**
  * Client-side reveal state machine. Purely presentational: the cards are
  * already drawn and saved by the server before the first one is shown.
+ * One card at a time: the back of card `cursor` is shown first (glowing in
+ * its rarity color for the better rarities), the next action flips it
+ * (`revealed` = number of face-up cards), the one after moves on.
  */
 export type RevealState =
   | { phase: "idle"; state: BoosterState; error: OpenError | null }
@@ -17,6 +21,7 @@ export type RevealState =
       state: BoosterState;
       opening: OpeningResult;
       revealed: number;
+      cursor: number;
     }
   | { phase: "done"; state: BoosterState; opening: OpeningResult };
 
@@ -49,6 +54,7 @@ export function revealReducer(
             state: action.opening.state,
             opening: action.opening,
             revealed: 0,
+            cursor: 0,
           }
         : current;
     case "failed":
@@ -57,10 +63,13 @@ export function revealReducer(
         : current;
     case "revealNext": {
       if (current.phase !== "revealing") return current;
-      const revealed = current.revealed + 1;
-      return revealed >= current.opening.cards.length
+      if (current.revealed <= current.cursor) {
+        return { ...current, revealed: current.cursor + 1 };
+      }
+      const next = current.cursor + 1;
+      return next >= current.opening.cards.length
         ? { phase: "done", state: current.state, opening: current.opening }
-        : { ...current, revealed };
+        : { ...current, cursor: next };
     }
     case "revealAll":
       return current.phase === "revealing"
@@ -103,21 +112,44 @@ export function revealOrder(cards: DrawnCard[]): DrawnCard[] {
 }
 
 /** Highest rarity first: used to pick the "best pull" for the summary. */
-const ORDER = [
-  "common",
-  "uncommon",
-  "rare",
-  "epic",
-  "legendary",
-  "mythic",
-] as const;
+const ORDER = RARITIES;
 export function bestCard(cards: DrawnCard[]): DrawnCard | undefined {
   return [...cards].sort(
     (a, b) => ORDER.indexOf(b.rarity) - ORDER.indexOf(a.rarity),
   )[0];
 }
 
-/** Rarities that get the suspense delay and the holographic finish. */
+/** Rarities that get the holographic finish. */
 export function isHighRarity(rarity: DrawnCard["rarity"]): boolean {
   return ORDER.indexOf(rarity) >= ORDER.indexOf("epic");
+}
+
+/** Rarities whose card back glows in their color before the flip. */
+export function glowsBeforeFlip(rarity: Rarity): boolean {
+  return ORDER.indexOf(rarity) >= ORDER.indexOf("rare");
+}
+
+/** Cards in fan order for the summary: best card in the middle. */
+export function fanOrder(cards: DrawnCard[]): DrawnCard[] {
+  const sorted = [...cards].sort(
+    (a, b) => ORDER.indexOf(b.rarity) - ORDER.indexOf(a.rarity),
+  );
+  const fan: DrawnCard[] = [];
+  sorted.forEach((card, i) =>
+    i % 2 === 1 ? fan.push(card) : fan.unshift(card),
+  );
+  return fan;
+}
+
+/** Summary figures: new cards, duplicates and what recycling them would give. */
+export function openingSummary(cards: DrawnCard[]) {
+  const duplicates = cards.filter((c) => !c.was_new);
+  return {
+    newCards: cards.length - duplicates.length,
+    duplicates: duplicates.length,
+    duplicateAces: duplicates.reduce(
+      (sum, c) => sum + gameConfig.recycleValues[c.rarity],
+      0,
+    ),
+  };
 }

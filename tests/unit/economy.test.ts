@@ -3,6 +3,11 @@ import { RARITIES, gameConfig } from "@config/game";
 import rarity from "../../config/rarity.json";
 import {
   asymptoticAcesPerBooster,
+  dailyFixedAces,
+  formatAcesCeiling,
+  goldenRate,
+  goldenSlotTable,
+  oneOffAces,
   simulatePlayer,
   slotTables,
   tierSizes,
@@ -54,6 +59,47 @@ describe("economy: no free-booster loop", () => {
     const { windows } = simulatePlayer(gameConfig, catalogue, 20_000, 7);
     expect(windows[0].acesPerBooster).toBeLessThan(
       windows.at(-1)!.acesPerBooster,
+    );
+  });
+});
+
+describe("economy: golden boosters, guarantees, fixed rewards and shop", () => {
+  it("golden boosters come about once every 20 boosters", () => {
+    const rate = goldenRate(gameConfig);
+    expect(1 / rate).toBeGreaterThan(15);
+    expect(1 / rate).toBeLessThan(gameConfig.goldenBooster.pityAt);
+  });
+
+  it("the golden booster has a non-zero chance and a guarantee", () => {
+    expect(gameConfig.goldenBooster.chanceBp).toBeGreaterThan(0);
+    expect(gameConfig.goldenBooster.pityAt).toBeGreaterThan(10);
+  });
+
+  it("the golden last slot excludes the lower rarities", () => {
+    const tables = slotTables(gameConfig);
+    expect(goldenSlotTable(gameConfig).length).toBeLessThan(
+      tables.at(-1)!.length,
+    );
+  });
+
+  it("fixed daily rewards cannot fund an aces booster on their own", () => {
+    expect(dailyFixedAces(gameConfig)).toBeLessThan(
+      gameConfig.acesBooster.price,
+    );
+  });
+
+  it("shop formats recycle for well under their price", () => {
+    expect(formatAcesCeiling(gameConfig, "box")).toBeLessThan(
+      gameConfig.shop.box.price / 2,
+    );
+    expect(formatAcesCeiling(gameConfig, "qualifiers")).toBeLessThan(
+      gameConfig.shop.qualifiers.price / 2,
+    );
+  });
+
+  it("one-off rewards stay modest", () => {
+    expect(oneOffAces(gameConfig)).toBeLessThan(
+      40 * gameConfig.acesBooster.price,
     );
   });
 });

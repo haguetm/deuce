@@ -10,15 +10,26 @@ import { SIMULATED_ACE_SOURCES } from "@/lib/game/economy";
  * SIMULATED_ACE_SOURCES is updated (see docs/DECISIONS.md).
  */
 const MIGRATIONS = path.resolve(__dirname, "../../supabase/migrations");
-const DEBITS_OR_MANUAL = new Set(["booster_purchase", "admin_adjustment"]);
+const DEBITS_OR_MANUAL = new Set([
+  "booster_purchase",
+  "grading",
+  "admin_adjustment",
+]);
 
+/** Reasons from the CREATE TYPE and every later ALTER TYPE ... ADD VALUE. */
 function ledgerReasons(sql: string): string[] {
   const enumMatch = sql.match(
     /create type public\.ledger_reason as enum \(([\s\S]*?)\);/,
   );
-  return enumMatch
+  const created = enumMatch
     ? [...enumMatch[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1])
     : [];
+  const added = [
+    ...sql.matchAll(
+      /alter type public\.ledger_reason add value (?:if not exists )?'([a-z_]+)'/g,
+    ),
+  ].map((m) => m[1]);
+  return [...created, ...added];
 }
 
 describe("economy simulation coverage", () => {
@@ -32,6 +43,7 @@ describe("economy simulation coverage", () => {
 
   it("finds the ledger reasons", () => {
     expect(reasons).toContain("recycle");
+    expect(reasons).toContain("login_streak");
   });
 
   it("every ace source written by SQL code is simulated", () => {

@@ -53,3 +53,19 @@ def test_preferred_surface_needs_enough_wins(tmp_path):
     assert stats["1001"].preferred_surface is None
     stats["1001"].wins_by_surface["Clay"] = 25
     assert stats["1001"].preferred_surface == "clay"
+
+
+def test_titles_by_major():
+    assert sackmann.major_of("Roland Garros") == "roland_garros"
+    assert sackmann.major_of(" Wimbledon ") == "wimbledon"
+    assert sackmann.major_of("Australian Chps.") == "australian_open"
+    assert sackmann.major_of("Slam A") is None
+
+
+def test_major_titles_are_stat_rows(tmp_path):
+    d = _write(tmp_path)
+    stats = sackmann.compute_stats(d, "atp", {"1001", "1003"})
+    rows = stats["1001"].as_stat_rows()
+    # "Slam A" is not a known major: counted as a Grand Slam, not per event
+    assert rows["grand_slam_titles"] == 1
+    assert rows["roland_garros_titles"] == 0

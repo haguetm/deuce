@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   bestCard,
+  fanOrder,
+  glowsBeforeFlip,
   refilled,
   initialReveal,
   isHighRarity,
+  openingSummary,
   revealOrder,
   revealReducer,
 } from "@/lib/game/reveal";
@@ -50,10 +53,16 @@ describe("reveal state machine", () => {
     expect(s).toMatchObject({
       phase: "revealing",
       revealed: 0,
+      cursor: 0,
       state: { stock: 1 },
     });
-    for (let i = 0; i < 4; i++) s = revealReducer(s, { type: "revealNext" });
-    expect(s).toMatchObject({ phase: "revealing", revealed: 4 });
+    // First action flips the card on stage, the second moves to the next back.
+    s = revealReducer(s, { type: "revealNext" });
+    expect(s).toMatchObject({ phase: "revealing", revealed: 1, cursor: 0 });
+    s = revealReducer(s, { type: "revealNext" });
+    expect(s).toMatchObject({ phase: "revealing", revealed: 1, cursor: 1 });
+    for (let i = 0; i < 7; i++) s = revealReducer(s, { type: "revealNext" });
+    expect(s).toMatchObject({ phase: "revealing", revealed: 5, cursor: 4 });
     s = revealReducer(s, { type: "revealNext" });
     expect(s.phase).toBe("done");
     s = revealReducer(s, { type: "again" });
@@ -96,6 +105,23 @@ describe("reveal state machine", () => {
     expect(bestCard(opening.cards)?.rarity).toBe("epic");
     expect(isHighRarity("epic")).toBe(true);
     expect(isHighRarity("rare")).toBe(false);
+    expect(glowsBeforeFlip("rare")).toBe(true);
+    expect(glowsBeforeFlip("uncommon")).toBe(false);
+  });
+
+  it("fans the summary with the best card in the middle", () => {
+    const fan = fanOrder(opening.cards);
+    expect(fan).toHaveLength(5);
+    expect(fan[2].rarity).toBe("epic");
+  });
+
+  it("counts new cards, duplicates and their recycle value", () => {
+    const cards = opening.cards.map((c, i) => ({ ...c, was_new: i > 1 }));
+    expect(openingSummary(cards)).toEqual({
+      newCards: 3,
+      duplicates: 2,
+      duplicateAces: 1 + 8,
+    });
   });
 });
 

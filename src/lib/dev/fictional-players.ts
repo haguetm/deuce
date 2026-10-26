@@ -154,6 +154,28 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
+const MAJORS = [
+  "australian_open",
+  "roland_garros",
+  "wimbledon",
+  "us_open",
+] as const;
+
+/**
+ * Splits Grand Slam titles across the four events. Separate PRNG so adding
+ * these stats does not change the names and values drawn before.
+ */
+function majorTitles(slams: number, seed: number): Record<string, number> {
+  const random = mulberry32(seed);
+  const counts = Object.fromEntries(
+    MAJORS.map((m) => [`${m}_titles`, 0]),
+  ) as Record<string, number>;
+  for (let i = 0; i < slams; i++) {
+    counts[`${MAJORS[Math.floor(random() * MAJORS.length)]}_titles`] += 1;
+  }
+  return counts;
+}
+
 export function fictionalPlayers(count = 100, seed = 2027): FictionalPlayer[] {
   const random = mulberry32(seed);
   const int = (min: number, max: number) =>
@@ -216,6 +238,7 @@ export function fictionalPlayers(count = 100, seed = 2027): FictionalPlayer[] {
         titles: slams + int(0, rarity === "common" ? 1 : 40),
         match_wins: wins,
         match_losses: Math.round(wins * (0.25 + random() * 0.6)),
+        ...majorTitles(slams, seed * 1000 + index),
       },
       bio: {
         fr: `${name} est un personnage fictif du jeu de données de développement. Spécialiste de la surface ${surface === "hard" ? "dure" : surface === "clay" ? "terre battue" : "gazon"}.`,

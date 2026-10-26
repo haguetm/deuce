@@ -19,7 +19,7 @@ insert into public.takedown_requests (id, requester_name, requester_email, reque
 select throws_ok($$delete from public.admin_audit_log where action = 'old.action'$$, '42501', null,
   'expired audit rows cannot be deleted outside the purge');
 
-select is(private.purge_expired_data(), '{"audit_deleted": 1, "takedowns_anonymized": 1}'::jsonb,
+select is(private.purge_expired_data(), '{"audit_deleted": 1, "takedowns_anonymized": 1, "anonymous_deleted": 0}'::jsonb,
   'purge reports what it did');
 
 select results_eq($$select action from public.admin_audit_log where action like '%.action' order by action$$,

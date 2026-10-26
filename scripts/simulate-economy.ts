@@ -7,6 +7,10 @@ import { gameConfig } from "../config/game";
 import rarity from "../config/rarity.json";
 import {
   asymptoticAcesPerBooster,
+  dailyFixedAces,
+  formatAcesCeiling,
+  goldenRate,
+  oneOffAces,
   simulatePlayer,
   tierSizes,
 } from "../src/lib/game/economy";
@@ -48,3 +52,23 @@ console.log(
     ? "OK: no free-booster loop."
     : "FAIL: recycling funds boosters.",
 );
+
+const golden = goldenRate(gameConfig);
+console.log(
+  `
+Golden boosters: ${(100 * golden).toFixed(1)} % (one every ${(1 / golden).toFixed(1)} boosters, guaranteed at ${gameConfig.goldenBooster.pityAt})`,
+);
+const daily = dailyFixedAces(gameConfig);
+console.log(
+  `Fixed daily rewards (streak average + best daily quests): ${daily.toFixed(1)} aces/day = ${((100 * daily) / price).toFixed(0)} % of an aces booster`,
+);
+console.log(
+  `One-off rewards (welcome quests + achievements): ${oneOffAces(gameConfig)} aces`,
+);
+for (const format of ["box", "qualifiers"] as const) {
+  const value = formatAcesCeiling(gameConfig, format);
+  const cost = gameConfig.shop[format].price;
+  console.log(
+    `Shop ${format}: at most ${value.toFixed(1)} aces back from recycling for ${cost} (${((100 * value) / cost).toFixed(0)} %)`,
+  );
+}

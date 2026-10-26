@@ -1,50 +1,57 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { supabaseEnv } from "@/lib/supabase/env";
+import { ChangelogDot } from "./changelog-dot";
+import { signOut as supabaseSignOut } from "./sign-out-button";
+import { useSession } from "./use-session";
 
 /**
  * Signed-in links, resolved in the browser so public pages stay static and
- * cacheable (no per-user server rendering in the shared layout).
+ * cacheable (no per-user server rendering in the shared layout). On phones
+ * the game links live in the bottom tab bar instead.
  */
 export function UserNav() {
   const t = useTranslations("nav");
   const router = useRouter();
-  const [signedIn, setSignedIn] = useState(false);
+  const { signedIn } = useSession();
 
-  useEffect(() => {
-    if (!supabaseEnv()) return;
-    const supabase = createSupabaseBrowserClient();
-    supabase.auth
-      .getSession()
-      .then(({ data }) => setSignedIn(Boolean(data.session)));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) =>
-      setSignedIn(Boolean(session)),
-    );
-    return () => data.subscription.unsubscribe();
-  }, []);
-
-  const signOut = async () => {
-    await createSupabaseBrowserClient().auth.signOut();
-    router.replace("/");
-    router.refresh();
-  };
+  const signOut = () => supabaseSignOut(router);
 
   return (
     <>
-      <Link href="/boosters" className="hover:text-ball">
-        {t("boosters")}
-      </Link>
-      {signedIn && (
-        <Link href="/history" className="hover:text-ball">
-          {t("history")}
+      <span className="hidden items-center gap-4 md:flex">
+        <Link href="/boosters" className="hover:text-ball">
+          {t("boosters")}
         </Link>
-      )}
+        {signedIn && (
+          <>
+            <Link href="/collection" className="hover:text-ball">
+              {t("collection")}
+            </Link>
+            <Link href="/missions" className="hover:text-ball">
+              {t("missions")}
+            </Link>
+            <Link href="/history" className="hover:text-ball">
+              {t("history")}
+            </Link>
+            <Link href="/profile" className="hover:text-ball">
+              {t("profile")}
+            </Link>
+          </>
+        )}
+      </span>
+      <Link href="/changelog" className="hover:text-ball">
+        {t("changelog")}
+        <ChangelogDot />
+      </Link>
       {signedIn ? (
-        <button type="button" onClick={signOut} className="hover:text-ball">
+        // On phones, signing out lives on the profile page (tab bar).
+        <button
+          type="button"
+          onClick={signOut}
+          className="hidden hover:text-ball md:inline"
+        >
           {t("logout")}
         </button>
       ) : (

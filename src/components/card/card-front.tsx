@@ -12,11 +12,21 @@ interface CardFrontProps {
   rarity: Rarity;
   image: CardImage | null;
   badge?: string;
+  /** Second badge, highlighted (e.g. "wished!"). */
+  highlight?: string;
+  catalogNumber?: number;
+  catalogSize?: number;
+  /** Missing card: dimmed photo, no holo. */
+  missing?: boolean;
+  /** Compact layout for grids and thumbnails (no credit line). */
+  compact?: boolean;
 }
 
 /**
- * Card front: photo (or silhouette), name, flag, rarity. Every displayed
- * photo carries its credit line (author and license, linked to Commons).
+ * Card front: photo (or silhouette), name, flag, rarity. The frame, the
+ * rarity chip and the holo all use the rarity color. Every displayed photo
+ * carries its credit (author and license, linked to Commons); compact
+ * thumbnails shorten it to a link whose title holds the full credit.
  */
 export function CardFront({
   name,
@@ -24,16 +34,21 @@ export function CardFront({
   rarity,
   image,
   badge,
+  highlight,
+  catalogNumber,
+  catalogSize,
+  missing = false,
+  compact = false,
 }: CardFrontProps) {
   const t = useTranslations();
   const src = imageUrl(image);
   return (
     <figure
-      className={`card-frame relative flex aspect-[5/7] w-full flex-col overflow-hidden rounded-xl border-2 border-gold bg-night ${isHighRarity(rarity) ? "card-holo" : ""}`}
+      className={`card-frame relative flex aspect-[5/7] w-full flex-col overflow-hidden rounded-xl border-2 border-[color:var(--card-rarity)] bg-night ${isHighRarity(rarity) && !missing ? "card-holo" : ""} ${missing ? "opacity-60 grayscale" : ""}`}
       style={{ ["--card-rarity" as string]: `var(--rarity-${rarity})` }}
     >
-      <div className="relative m-2 flex-1 overflow-hidden rounded-lg border border-[color:var(--card-rarity)] bg-cream/5">
-        {src ? (
+      <div className="relative m-1.5 flex-1 overflow-hidden rounded-lg border border-[color:var(--card-rarity)] bg-cream/5">
+        {src && !missing ? (
           // Pre-resized WebP from our own storage: next/image would only add a second resize.
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -60,31 +75,66 @@ export function CardFront({
             </svg>
           </div>
         )}
-        {badge && (
-          <span className="absolute left-2 top-2 rounded-full bg-ball px-2 py-0.5 text-xs font-semibold text-night">
-            {badge}
+        <span
+          className="absolute right-1.5 top-1.5 rounded-full bg-[color:var(--card-rarity)] px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none text-night"
+          title={t(`rarity.${rarity}`)}
+        >
+          {t(`rarityShort.${rarity}`)}
+        </span>
+        {(badge || highlight) && (
+          <span className="absolute left-1.5 top-1.5 flex flex-col items-start gap-1">
+            {highlight && (
+              <span className="card-wished rounded-full bg-gold px-2 py-0.5 text-xs font-bold text-night">
+                {highlight}
+              </span>
+            )}
+            {badge && (
+              <span className="rounded-full bg-ball px-2 py-0.5 text-xs font-semibold text-night">
+                {badge}
+              </span>
+            )}
+          </span>
+        )}
+        {catalogNumber !== undefined && (
+          <span className="absolute bottom-1 left-1.5 rounded bg-night/70 px-1 font-mono text-[10px] text-cream/80">
+            {t("card.number", {
+              number: String(catalogNumber).padStart(3, "0"),
+              total: catalogSize ?? "?",
+            })}
           </span>
         )}
       </div>
-      <figcaption className="px-3 pb-2">
+      <figcaption className={compact ? "px-2 pb-1.5" : "px-3 pb-2"}>
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate font-semibold text-cream">{name}</span>
+          <span
+            className={`truncate font-semibold text-cream ${compact ? "text-xs" : ""}`}
+          >
+            {name}
+          </span>
           <CountryFlag code={countryCode} />
         </div>
-        <span className="text-xs font-medium uppercase tracking-wider text-[color:var(--card-rarity)]">
+        <span
+          className={`font-medium uppercase tracking-wider text-[color:var(--card-rarity)] ${compact ? "text-[10px]" : "text-xs"}`}
+        >
           {t(`rarity.${rarity}`)}
         </span>
-        {image && (
+        {image && !missing && (
           <a
             href={image.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 block truncate text-[10px] text-cream/60 underline-offset-2 hover:underline"
-          >
-            {t("card.photoCredit", {
+            title={t("card.photoCredit", {
               author: image.author,
               license: image.license,
             })}
+            className="mt-1 block truncate text-[10px] text-cream/60 underline-offset-2 hover:underline"
+          >
+            {compact
+              ? t("card.photoCreditShort")
+              : t("card.photoCredit", {
+                  author: image.author,
+                  license: image.license,
+                })}
           </a>
         )}
       </figcaption>

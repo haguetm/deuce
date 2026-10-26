@@ -27,6 +27,13 @@ TITLE_LEVELS = {
     "wta": {"G", "P", "PM", "I", "T1", "T2", "T3", "T4", "T5", "F"},
 }
 GRAND_SLAM = "G"
+# Grand Slam events by tourney_name (Sackmann spelling, historical names included).
+MAJORS = {
+    "australian_open": ("australian open", "australian chps."),
+    "roland_garros": ("roland garros", "french open"),
+    "wimbledon": ("wimbledon",),
+    "us_open": ("us open", "us national chps."),
+}
 SURFACE_MIN_WINS = 20
 
 
@@ -39,6 +46,7 @@ class PlayerStats:
     titles: int = 0
     grand_slam_titles: int = 0
     grand_slam_finals: int = 0
+    titles_by_major: Counter = field(default_factory=Counter)
     match_wins: int = 0
     match_losses: int = 0
     first_year: int | None = None
@@ -63,7 +71,17 @@ class PlayerStats:
             "match_wins": self.match_wins,
             "match_losses": self.match_losses,
         }
+        for major in MAJORS:
+            rows[f"{major}_titles"] = self.titles_by_major[major]
         return {k: v for k, v in rows.items() if v is not None}
+
+
+def major_of(tourney_name: str) -> str | None:
+    name = tourney_name.strip().lower()
+    for major, names in MAJORS.items():
+        if name in names:
+            return major
+    return None
 
 
 def read_players(tour_dir: Path, tour: str) -> dict[str, str]:
@@ -133,3 +151,6 @@ def _read_matches(tour_dir: Path, tour: str, stats: dict[str, PlayerStats]) -> N
                         s.grand_slam_finals += 1
                         if won:
                             s.grand_slam_titles += 1
+                            major = major_of(row.get("tourney_name") or "")
+                            if major:
+                                s.titles_by_major[major] += 1
