@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { CardFront } from "@/components/card/card-front";
-import { glowsBeforeFlip } from "@/lib/game/reveal";
 import type { DrawnCard } from "@/lib/game/types";
 
 /**
@@ -14,7 +13,6 @@ import type { DrawnCard } from "@/lib/game/types";
  */
 export function RevealStage({
   cards,
-  revealed,
   cursor,
   golden,
   catalogSize,
@@ -22,7 +20,6 @@ export function RevealStage({
   onRevealAll,
 }: {
   cards: DrawnCard[];
-  revealed: number;
   cursor: number;
   golden: boolean;
   catalogSize?: number;
@@ -32,7 +29,9 @@ export function RevealStage({
   const t = useTranslations("booster");
   const tRarity = useTranslations("rarity");
   const card = cards[cursor];
-  const flipped = revealed > cursor;
+  // Interim (replaced by the face-up stack): cards are shown face up.
+  const revealed = cursor + 1;
+  const flipped = true;
   const stage = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -78,7 +77,7 @@ export function RevealStage({
         >
           <div className="card-face card-back">
             <div
-              className={`flex aspect-[5/7] w-full items-center justify-center rounded-xl border-2 border-gold bg-emerald/40 ${glowsBeforeFlip(card.rarity) ? "card-tease" : ""}`}
+              className={`flex aspect-[5/7] w-full items-center justify-center rounded-xl border-2 border-gold bg-emerald/40 `}
               style={{
                 ["--card-rarity" as string]: `var(--rarity-${card.rarity})`,
               }}

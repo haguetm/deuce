@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { gameConfig, type PoolKey } from "@config/game";
 import { Link } from "@/i18n/navigation";
@@ -102,11 +102,15 @@ export function BoosterOpener({
   const booster = state.state;
   const aces = booster.aces ?? 0;
 
+  // Interim, until the tube animates the exit: the cards are out at once.
+  useEffect(() => {
+    if (state.phase === "emerging") dispatch({ type: "emerged" });
+  }, [state.phase]);
+
   if (state.phase === "revealing") {
     return (
       <RevealStage
         cards={revealOrder(state.opening.cards)}
-        revealed={state.revealed}
         cursor={state.cursor}
         golden={Boolean(state.opening.golden)}
         catalogSize={state.opening.catalog_size}

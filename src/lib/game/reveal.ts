@@ -1,4 +1,4 @@
-import { gameConfig, RARITIES, type Rarity } from "@config/game";
+import { gameConfig, RARITIES } from "@config/game";
 import type {
   BoosterState,
   DrawnCard,
@@ -9,18 +9,22 @@ import type {
 /**
  * Client-side reveal state machine. Purely presentational: the cards are
  * already drawn and saved by the server before the first one is shown.
- * One card at a time: the back of card `cursor` is shown first (glowing in
- * its rarity color for the better rarities), the next action flips it
- * (`revealed` = number of face-up cards), the one after moves on.
+ *   idle -> open -> opening (tube opening, server call in flight)
+ *   opening -> opened -> emerging (tube plays golden, puff, cards rising)
+ *   opening -> failed -> idle (with the error)
+ *   emerging -> emerged (sent by the tube) -> revealing, cursor 0
+ *   revealing -> revealNext (top card slides away) ... -> done
+ * Cards come out face up: card `cursor` is on top of the stack and counts
+ * as revealed as soon as it gets there.
  */
 export type RevealState =
   | { phase: "idle"; state: BoosterState; error: OpenError | null }
   | { phase: "opening"; state: BoosterState }
+  | { phase: "emerging"; state: BoosterState; opening: OpeningResult }
   | {
       phase: "revealing";
       state: BoosterState;
       opening: OpeningResult;
-      revealed: number;
       cursor: number;
     }
   | { phase: "done"; state: BoosterState; opening: OpeningResult };
@@ -29,6 +33,7 @@ export type RevealAction =
   | { type: "open" }
   | { type: "opened"; opening: OpeningResult }
   | { type: "failed"; error: OpenError }
+  | { type: "emerged" }
   | { type: "revealNext" }
   | { type: "revealAll" }
   | { type: "again" }
@@ -50,12 +55,14 @@ export function revealReducer(
     case "opened":
       return current.phase === "opening"
         ? {
-            phase: "revealing",
+            phase: "emerging",
             state: action.opening.state,
             opening: action.opening,
-            revealed: 0,
-            cursor: 0,
           }
+        : current;
+    case "emerged":
+      return current.phase === "emerging"
+        ? { ...current, phase: "revealing", cursor: 0 }
         : current;
     case "failed":
       return current.phase === "opening"
@@ -63,9 +70,6 @@ export function revealReducer(
         : current;
     case "revealNext": {
       if (current.phase !== "revealing") return current;
-      if (current.revealed <= current.cursor) {
-        return { ...current, revealed: current.cursor + 1 };
-      }
       const next = current.cursor + 1;
       return next >= current.opening.cards.length
         ? { phase: "done", state: current.state, opening: current.opening }
@@ -122,11 +126,6 @@ export function bestCard(cards: DrawnCard[]): DrawnCard | undefined {
 /** Rarities that get the holographic finish. */
 export function isHighRarity(rarity: DrawnCard["rarity"]): boolean {
   return ORDER.indexOf(rarity) >= ORDER.indexOf("epic");
-}
-
-/** Rarities whose card back glows in their color before the flip. */
-export function glowsBeforeFlip(rarity: Rarity): boolean {
-  return ORDER.indexOf(rarity) >= ORDER.indexOf("rare");
 }
 
 /** Cards in fan order for the summary: best card in the middle. */

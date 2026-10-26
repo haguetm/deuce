@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   bestCard,
   fanOrder,
-  glowsBeforeFlip,
   refilled,
   initialReveal,
   isHighRarity,
@@ -45,24 +44,21 @@ const opening: OpeningResult = {
 };
 
 describe("reveal state machine", () => {
-  it("goes idle -> opening -> revealing -> done, one card at a time", () => {
+  it("goes idle -> opening -> emerging -> revealing -> done", () => {
     let s = initialReveal(state);
     s = revealReducer(s, { type: "open" });
     expect(s.phase).toBe("opening");
     s = revealReducer(s, { type: "opened", opening });
-    expect(s).toMatchObject({
-      phase: "revealing",
-      revealed: 0,
-      cursor: 0,
-      state: { stock: 1 },
-    });
-    // First action flips the card on stage, the second moves to the next back.
-    s = revealReducer(s, { type: "revealNext" });
-    expect(s).toMatchObject({ phase: "revealing", revealed: 1, cursor: 0 });
-    s = revealReducer(s, { type: "revealNext" });
-    expect(s).toMatchObject({ phase: "revealing", revealed: 1, cursor: 1 });
-    for (let i = 0; i < 7; i++) s = revealReducer(s, { type: "revealNext" });
-    expect(s).toMatchObject({ phase: "revealing", revealed: 5, cursor: 4 });
+    expect(s).toMatchObject({ phase: "emerging", state: { stock: 1 } });
+    // The tube tells when the cards are out; nothing to reveal before.
+    expect(revealReducer(s, { type: "revealNext" })).toBe(s);
+    s = revealReducer(s, { type: "emerged" });
+    expect(s).toMatchObject({ phase: "revealing", cursor: 0 });
+    // Face up: each action slides the top card away and shows the next one.
+    for (let i = 1; i < 5; i++) {
+      s = revealReducer(s, { type: "revealNext" });
+      expect(s).toMatchObject({ phase: "revealing", cursor: i });
+    }
     s = revealReducer(s, { type: "revealNext" });
     expect(s.phase).toBe("done");
     s = revealReducer(s, { type: "again" });
@@ -78,7 +74,9 @@ describe("reveal state machine", () => {
       revealReducer(initialReveal(state), { type: "open" }),
       { type: "opened", opening },
     );
-    s = revealReducer(s, { type: "revealAll" });
+    s = revealReducer(revealReducer(s, { type: "emerged" }), {
+      type: "revealAll",
+    });
     expect(s.phase).toBe("done");
   });
 
@@ -93,6 +91,11 @@ describe("reveal state machine", () => {
     expect(s).toEqual({ phase: "idle", state, error: "no_booster_available" });
   });
 
+  it("ignores a stray emerged outside of the exit animation", () => {
+    const idle = initialReveal(state);
+    expect(revealReducer(idle, { type: "emerged" })).toBe(idle);
+  });
+
   it("ignores a double click while a booster is opening", () => {
     const opening1 = revealReducer(initialReveal(state), { type: "open" });
     expect(revealReducer(opening1, { type: "open" })).toBe(opening1);
@@ -105,8 +108,6 @@ describe("reveal state machine", () => {
     expect(bestCard(opening.cards)?.rarity).toBe("epic");
     expect(isHighRarity("epic")).toBe(true);
     expect(isHighRarity("rare")).toBe(false);
-    expect(glowsBeforeFlip("rare")).toBe(true);
-    expect(glowsBeforeFlip("uncommon")).toBe(false);
   });
 
   it("fans the summary with the best card in the middle", () => {
