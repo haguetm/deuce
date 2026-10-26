@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { brand } from "@config/brand";
+import { gameConfig } from "@config/game";
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -12,9 +13,21 @@ function walk(dir: string): string[] {
 
 describe("brand config", () => {
   it("defines valid hex colors", () => {
-    const all = { ...brand.colors, ...brand.rarityColors };
+    const all = {
+      ...brand.colors,
+      ...brand.rarityColors,
+      ...brand.packColors,
+      ...brand.glowColors,
+      ...brand.tube,
+    };
     for (const value of Object.values(all)) {
       expect(value).toMatch(/^#[0-9A-F]{6}$/i);
+    }
+  });
+
+  it("has a halo color for each glow tier", () => {
+    for (const tier of new Set(Object.values(gameConfig.glowTiers))) {
+      expect(brand.glowColors[tier]).toMatch(/^#[0-9A-F]{6}$/i);
     }
   });
 

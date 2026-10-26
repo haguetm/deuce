@@ -135,6 +135,20 @@ export const gameConfig = {
     pityAt: 300,
   },
 
+  /**
+   * Halo level of a card still hidden in the booster stack: rarities go by
+   * pairs, so the halo hints at two rarities, never one. The exact rarity
+   * shows on the card frame once the card is on top.
+   */
+  glowTiers: {
+    common: 1,
+    uncommon: 1,
+    rare: 2,
+    epic: 2,
+    legendary: 3,
+    mythic: 3,
+  } satisfies Record<Rarity, 1 | 2 | 3>,
+
   /** Aces earned for each recycled duplicate copy. */
   recycleValues: {
     common: 1,

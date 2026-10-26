@@ -36,6 +36,39 @@ export const brand = {
   },
 
   /**
+   * Booster tube label colors, per pool or source. A pool without its own
+   * color uses `default`.
+   */
+  packColors: {
+    default: "#2F6F8F",
+    all: "#2F6F8F",
+    men: "#1F4E9C",
+    women: "#B23A6B",
+    legends: "#8C6A2B",
+    daily: "#C9A227",
+    box: "#5B3FA8",
+    qualifiers: "#3B7F5C",
+  },
+
+  /**
+   * Halo around a card still hidden in the booster stack: one color per pair
+   * of rarities (gameConfig.glowTiers), so the halo never tells the exact rarity.
+   */
+  glowColors: {
+    1: "#A8C3B0",
+    2: "#6A7BFF",
+    3: "#FFB02E",
+  },
+
+  /** 3D tube materials and the "pschitt" puff. */
+  tube: {
+    metal: "#C9CED6",
+    aluminium: "#E4E7EB",
+    gold: "#D4A62A",
+    puff: "#F5F2E9",
+  },
+
+  /**
    * Logo assets. Placeholder until the final emblem is dropped in public/brand/.
    * Paths are relative to /public.
    */
