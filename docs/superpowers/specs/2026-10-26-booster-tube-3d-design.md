@@ -28,7 +28,7 @@ Hors périmètre :
 - Les joueurs fictifs sortent du catalogue : `update public.players set in_catalog = false where is_dev_seed;`. Ils restent en base et peuvent être remis. La requête écrit une ligne d'audit par joueur (trigger existant), c'est attendu.
 - Ne jamais lancer `supabase db reset` après l'import : cela efface les joueurs importés.
 - Critère de réussite : au moins 80 % des cartes du catalogue ont une photo visible. La requête de contrôle :
-  `select round(100.0 * count(i.id) / count(*)) from players p left join player_images i on i.player_id = p.id and i.is_primary and not i.hidden where p.in_catalog;`
+  `select round(100.0 * count(i.id) / count(*)) from public.players p left join public.player_images i on i.player_id = p.id and i.is_primary and not i.hidden where p.in_catalog;`
   Les autres cartes gardent la silhouette, ce qui est légitime quand aucune photo libre n'existe.
 
 ## 2. Filtres renommés
@@ -57,12 +57,12 @@ Hors périmètre :
   - `brand.test.ts` vérifie que ces nouvelles valeurs sont des hex valides.
 - Étiquette : texture dessinée dans un canvas 2D, avec `brand.wordmark` et le nom du booster.
 
-| Source                  | Nom affiché                      | Couleur                            |
-| ----------------------- | -------------------------------- | ---------------------------------- |
-| `free`, `bonus`, `aces` | nom du filtre choisi (`pools.*`) | `packColors[pool]` sinon `default` |
-| `daily`                 | thème du jour (`dailyThemes.*`)  | `daily`                            |
-| `box`                   | `shop.box.name`                  | `box`                              |
-| `qualifiers`            | `shop.qualifiers.name`           | `qualifiers`                       |
+| Source                  | Nom affiché                                                | Couleur                            |
+| ----------------------- | ---------------------------------------------------------- | ---------------------------------- |
+| `free`, `bonus`, `aces` | nom du filtre choisi (`pools.*`)                           | `packColors[pool]` sinon `default` |
+| `daily`                 | thème du jour (`dailyThemes.*`), sinon `booster.dailyPack` | `daily`                            |
+| `box`                   | `shop.box.name`                                            | `box`                              |
+| `qualifiers`            | `shop.qualifiers.name`                                     | `qualifiers`                       |
 
 - Au repos : rotation lente (0,2 rad/s) et léger suivi du pointeur (±8°), sur ordinateur uniquement.
 
@@ -93,6 +93,7 @@ Repli :
 
 - `"fallback"` : un tube en SVG statique, avec le même déroulé (bouton « Ouvrir », opercule qui se décolle en CSS, sortie des cartes).
 - `"reduced"` : le même tube SVG, en fondus seulement, sans déplacement.
+- Dans ces deux modes, un booster doré colore le tube SVG en or et affiche le bandeau « Booster doré ! » (`booster.goldenBooster`).
 
 Côté cartes, les animations n'utilisent que `transform` et `opacity`, avec `will-change` pendant l'animation seulement.
 
@@ -155,7 +156,8 @@ Machine d'état (`revealReducer`) :
   - `stackLayout` pour 5 et 20 cartes ;
   - `useRenderMode` avec un faux `getContext`, un faux nom de moteur de rendu et un faux compteur d'images ;
   - `brand.test.ts` étendu à `packColors`, `glowColors` et `tube` ;
-  - test des messages : chaque pool a un texte, et chaque pool a une couleur ou passe par `default`.
+  - test des messages : chaque pool a un texte ;
+  - `brand.test.ts` : chaque pool a une couleur d'étiquette ou passe par `packColors.default`.
 - **SQL** : `12_progression.sql`, dans le bloc des pools (lignes 81 à 85), passe de `wta` à `women` (appel, libellé, valeur enregistrée).
 - **Manuels** (navigateur intégré, ordinateur et vue mobile) :
   - ouverture complète en 3D, en repli et en mode réduit ;
