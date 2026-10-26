@@ -202,7 +202,6 @@ export const gameConfig = {
     all: {},
     men: { sex: "male" },
     women: { sex: "female" },
-    legends: { careerEndBefore: 1990 },
   } satisfies Record<string, CardPool>,
 
   /** Daily booster theme: a calendar theme when one is active, else rotation. */

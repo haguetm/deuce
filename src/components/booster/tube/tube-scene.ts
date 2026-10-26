@@ -96,19 +96,25 @@ function drawLabel(
   const { width: w, height: h } = canvas;
   ctx.fillStyle = pack;
   ctx.fillRect(0, 0, w, h);
-  // The front of the tube faces the middle of the texture.
   ctx.textAlign = "center";
-  ctx.fillStyle = options.colors.cream;
-  ctx.font = `700 ${h * 0.22}px ${options.font}`;
-  ctx.fillText(options.wordmark.split("").join(" "), w / 2, h * 0.42);
-  ctx.font = `500 ${h * 0.11}px ${options.font}`;
-  ctx.fillText(label, w / 2, h * 0.62);
-  ctx.fillStyle = options.colors.ball;
-  for (const dx of [-1, 0, 1]) {
-    ctx.beginPath();
-    ctx.arc(w / 2 + dx * h * 0.16, h * 0.82, h * 0.055, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  const face = (cx: number) => {
+    ctx.fillStyle = options.colors.cream;
+    ctx.font = `700 ${h * 0.22}px ${options.font}`;
+    ctx.fillText(options.wordmark.split("").join(" "), cx, h * 0.42);
+    ctx.font = `500 ${h * 0.11}px ${options.font}`;
+    ctx.fillText(label, cx, h * 0.62);
+    ctx.fillStyle = options.colors.ball;
+    for (const dx of [-1, 0, 1]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx * h * 0.16, h * 0.82, h * 0.055, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+  // Front: middle of the texture. Back: the seam, drawn as two halves at
+  // both edges, so the booster name shows whichever side faces the player.
+  face(w / 2);
+  face(0);
+  face(w);
 }
 
 export function createTubeScene(

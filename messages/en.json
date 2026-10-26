@@ -154,8 +154,7 @@
     "legend": "Choose your free booster (same stock, same odds)",
     "all": "All",
     "men": "Men",
-    "women": "Women",
-    "legends": "Legends"
+    "women": "Women"
   },
   "dailyThemes": {
     "australianOpen": "Australians in the spotlight",
@@ -526,7 +525,7 @@
           "golden": "Golden booster: about one booster in 20, guaranteed by the 30th at the latest. Its last card is better.",
           "pity": "Top rarity guaranteed by the 300th booster at the latest, with a visible counter.",
           "daily": "Free daily booster, with a theme that follows the tennis calendar.",
-          "pools": "Choice of free booster: All, Men, Women or Legends.",
+          "pools": "Choice of free booster: All, Men or Women.",
           "shop": "Aces shop: 20-card Box and Qualifiers.",
           "collection": "Collection page: nation albums, collections, wishlist, one-click recycling, grading.",
           "missions": "Missions: 7-day login streak, daily missions, first steps and achievements.",

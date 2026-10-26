@@ -44,7 +44,6 @@ export const brand = {
     all: "#2F6F8F",
     men: "#1F4E9C",
     women: "#B23A6B",
-    legends: "#8C6A2B",
     daily: "#C9A227",
     box: "#5B3FA8",
     qualifiers: "#3B7F5C",
