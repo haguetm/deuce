@@ -64,6 +64,8 @@ Chaque entrée : date, décision, raison. Les valeurs marquées **provisoire** s
 - **2026-10-26 - Raretés affichées** : code court par rareté (`rarityShort` dans `messages/`) et couleur de rareté sur le cadre, les filtres et les albums. Les noms suivent `messages/*.json`.
 - **2026-10-26 - Collection** : numéro de catalogue = rang par identifiant parmi les cartes du catalogue (stable tant que le catalogue ne fait que grandir). Albums par nation (au moins 5 cartes) et collections choisies (`collections` dans `config/game.ts`). Le pipeline compte désormais les titres par tournoi du Grand Chelem.
 
+- **2026-10-26 - Ouverture en tube de balles** (conception `docs/superpowers/specs/2026-10-26-booster-tube-3d-design.md`) : tube en 3D (Three.js 0.186.1, chargé seulement sur la page Boosters) dont on arrache l'opercule ; repli automatique sur un tube SVG si WebGL manque, si le rendu passe par le processeur (`failIfMajorPerformanceCaveat`, nom du moteur de rendu) ou si la fluidité au repos tombe sous 24 images par seconde ; fondus seulement avec `prefers-reduced-motion`. Les cartes sortent face visible, empilées ; le halo indique une paire de raretés (3 niveaux pour 6 raretés, `glowTiers`) et ne change jamais, le cadre indique la rareté exacte une fois la carte au-dessus. Les cartes couvertes ne laissent voir aucune rareté (`CardFront concealed`).
+
 ## Planning phase 1 (11 semaines utiles, absence du 26/12 au 03/01)
 
 | Semaine | Dates        | Contenu                                                                          | h    |
