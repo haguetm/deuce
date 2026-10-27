@@ -49,10 +49,23 @@ def test_slugify():
     assert wikidata.slugify("  O'Neil  ") == "o-neil"
 
 
-def test_details_query_rejects_invalid_ids():
-    query = wikidata.details_query(["Q1", "Q2", "DROP TABLE", "Q3}"])
-    assert "wd:Q1 wd:Q2" in query
-    assert "DROP" not in query and "Q3}" not in query
+def test_details_queries_reject_invalid_ids():
+    for query in wikidata.details_queries(["Q1", "Q2", "DROP TABLE", "Q3}"]):
+        assert "wd:Q1 wd:Q2" in query
+        assert "DROP" not in query and "Q3}" not in query
+        assert query.count("OPTIONAL") <= 3  # small queries only
+
+
+def test_detail_groups_merge_into_one_row_per_player():
+    p1 = {"p": {"value": "http://www.wikidata.org/entity/Q1"}}
+    p2 = {"p": {"value": "http://www.wikidata.org/entity/Q2"}}
+    rows = wikidata.merge_rows([
+        [{**p1, "label_en": {"value": "One"}}, {**p2, "label_en": {"value": "Two"}}],
+        [{**p1, "sex": {"value": "http://www.wikidata.org/entity/Q6581097"}}],
+    ])
+    assert len(rows) == 2
+    player = wikidata.parse_player(rows[0])
+    assert (player.qid, player.name, player.sex) == ("Q1", "One", "male")
 
 
 def test_count_query_filters_on_fr_or_en_article():

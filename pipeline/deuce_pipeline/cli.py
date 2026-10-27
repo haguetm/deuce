@@ -82,7 +82,7 @@ def cmd_import(args: argparse.Namespace) -> None:
     with db.connect() as conn:
         for i in range(0, len(qids), BATCH):
             batch = qids[i : i + BATCH]
-            details = wikidata.run_query(client, wikidata.details_query(batch))
+            details = wikidata.fetch_details(client, batch)
             for row in details:
                 player = wikidata.parse_player(row)
                 for problem in player.issues:
