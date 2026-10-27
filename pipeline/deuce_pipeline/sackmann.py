@@ -1,8 +1,10 @@
 """Career statistics from Jeff Sackmann's datasets (CC BY-NC-SA 4.0).
 
-Expects local clones (never committed):
-  pipeline/data/tennis_atp/   https://github.com/JeffSackmann/tennis_atp
-  pipeline/data/tennis_wta/   https://github.com/JeffSackmann/tennis_wta
+The original GitHub repositories (JeffSackmann/tennis_atp, tennis_wta) were
+removed in 2026; the data comes from an archival mirror with the same files
+and license, downloaded by `deuce-pipeline fetch-sackmann` (never committed):
+  pipeline/data/tennis_atp/   <ARCHIVE_URL>/tree/main/atp
+  pipeline/data/tennis_wta/   <ARCHIVE_URL>/tree/main/wta
 
 Only main-draw tour files (atp_matches_YYYY.csv / wta_matches_YYYY.csv) are
 read; qualifying, challenger, ITF and amateur files are ignored.
@@ -15,10 +17,12 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+ARCHIVE = "Aneeshers/tennis-sackmann-archive"
+ARCHIVE_URL = f"https://huggingface.co/datasets/{ARCHIVE}"
 SOURCE_ID = {"atp": "sackmann_atp", "wta": "sackmann_wta"}
 SOURCE_URL = {
-    "atp": "https://github.com/JeffSackmann/tennis_atp",
-    "wta": "https://github.com/JeffSackmann/tennis_wta",
+    "atp": f"{ARCHIVE_URL}/tree/main/atp",
+    "wta": f"{ARCHIVE_URL}/tree/main/wta",
 }
 
 # tourney_level codes that award a tour title (provisional, see docs/DATA.md).
@@ -74,6 +78,41 @@ class PlayerStats:
         for major in MAJORS:
             rows[f"{major}_titles"] = self.titles_by_major[major]
         return {k: v for k, v in rows.items() if v is not None}
+
+
+def archive_files(listing: dict) -> list[tuple[str, str]]:
+    """(tour, path) of the ATP and WTA files in the archive's API listing."""
+    files = []
+    for sibling in listing.get("siblings", []):
+        path = sibling["rfilename"]
+        tour = path.split("/", 1)[0]
+        if tour in SOURCE_ID and path.endswith((".csv", ".md")):
+            files.append((tour, path))
+    return files
+
+
+def fetch_archive(dest: Path, client, retries: int = 3) -> int:
+    """Downloads the archive into dest/tennis_{atp,wta}/; skips files already there."""
+    listing = client.get(f"https://huggingface.co/api/datasets/{ARCHIVE}").json()
+    downloaded = 0
+    for tour, path in archive_files(listing):
+        out = dest / f"tennis_{tour}" / Path(path).name
+        if out.exists() and out.stat().st_size > 0:
+            continue
+        out.parent.mkdir(parents=True, exist_ok=True)
+        for attempt in range(retries):
+            try:
+                response = client.get(f"{ARCHIVE_URL}/resolve/main/{path}")
+                response.raise_for_status()
+                break
+            except Exception:
+                if attempt == retries - 1:
+                    raise
+        tmp = out.with_suffix(out.suffix + ".part")
+        tmp.write_bytes(response.content)
+        tmp.replace(out)
+        downloaded += 1
+    return downloaded
 
 
 def major_of(tourney_name: str) -> str | None:

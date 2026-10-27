@@ -1,8 +1,8 @@
 -- Reference data needed in every environment.
 insert into public.data_sources (id, name, url, license, license_url, commercial_use_allowed) values
-  ('sackmann_atp', 'Jeff Sackmann - tennis_atp', 'https://github.com/JeffSackmann/tennis_atp',
+  ('sackmann_atp', 'Jeff Sackmann - tennis_atp (archive)', 'https://huggingface.co/datasets/Aneeshers/tennis-sackmann-archive',
    'CC BY-NC-SA 4.0', 'https://creativecommons.org/licenses/by-nc-sa/4.0/', false),
-  ('sackmann_wta', 'Jeff Sackmann - tennis_wta', 'https://github.com/JeffSackmann/tennis_wta',
+  ('sackmann_wta', 'Jeff Sackmann - tennis_wta (archive)', 'https://huggingface.co/datasets/Aneeshers/tennis-sackmann-archive',
    'CC BY-NC-SA 4.0', 'https://creativecommons.org/licenses/by-nc-sa/4.0/', false),
   ('wikidata', 'Wikidata', 'https://www.wikidata.org',
    'CC0 1.0', 'https://creativecommons.org/publicdomain/zero/1.0/', true),

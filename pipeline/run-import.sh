@@ -29,22 +29,14 @@ export DATABASE_URL PIPELINE_CONTACT
 export IMAGE_STORAGE_PROVIDER="${IMAGE_STORAGE_PROVIDER:-local}"
 export PIPELINE_MIN_INTERVAL_S="${PIPELINE_MIN_INTERVAL_S:-1.0}"
 
-# Sackmann datasets (CC BY-NC-SA 4.0, never committed)
-mkdir -p "$PIPELINE_DIR/data"
-for tour in atp wta; do
-  dir="$PIPELINE_DIR/data/tennis_$tour"
-  if [ -d "$dir/.git" ]; then
-    git -C "$dir" pull --ff-only --quiet
-  else
-    git clone --depth 1 --quiet "https://github.com/JeffSackmann/tennis_$tour" "$dir"
-  fi
-  echo "tennis_$tour: $(ls "$dir"/${tour}_matches_[0-9]*.csv 2>/dev/null | wc -l | tr -d ' ') match files"
-done
-
 if [ ! -x "$PIPELINE_DIR/.venv/bin/deuce-pipeline" ]; then
   python3 -m venv "$PIPELINE_DIR/.venv"
   "$PIPELINE_DIR/.venv/bin/pip" install --quiet -e "$PIPELINE_DIR"
 fi
+
+# Sackmann datasets (CC BY-NC-SA 4.0, never committed). The original GitHub
+# repositories were removed in 2026: archival mirror, same files and license.
+"$PIPELINE_DIR/.venv/bin/deuce-pipeline" fetch-sackmann
 
 cd "$PIPELINE_DIR"
 .venv/bin/deuce-pipeline import --limit "$LIMIT"

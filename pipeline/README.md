@@ -22,8 +22,7 @@ Variables d'environnement (voir `.env.example` à la racine) :
 Données Sackmann (jamais versionnées, licence CC BY-NC-SA 4.0) :
 
 ```bash
-git clone --depth 1 https://github.com/JeffSackmann/tennis_atp pipeline/data/tennis_atp
-git clone --depth 1 https://github.com/JeffSackmann/tennis_wta pipeline/data/tennis_wta
+.venv/bin/deuce-pipeline fetch-sackmann   # archive Hugging Face, voir docs/DATA.md
 ```
 
 ## Import réel depuis une machine personnelle

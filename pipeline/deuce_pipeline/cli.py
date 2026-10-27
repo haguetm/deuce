@@ -4,14 +4,18 @@
   deuce-pipeline import --limit 200        mini catalogue (most-linked players)
   deuce-pipeline import --min-sitelinks K  full catalogue above the threshold
   deuce-pipeline score                     recompute rarity scores and tiers
+  deuce-pipeline fetch-sackmann            download the Sackmann data archive
 
 Every command is idempotent and writes a journal to pipeline/logs/.
 """
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import date
 from pathlib import Path
+
+import httpx
 
 from . import commons, db, images, pageviews, sackmann, scoring, storage, wikidata, wikipedia
 from .http import HttpClient
@@ -161,6 +165,19 @@ def cmd_score(args: argparse.Namespace) -> None:
     journal.close()
 
 
+def cmd_fetch_sackmann(args: argparse.Namespace) -> None:
+    contact = os.environ.get("PIPELINE_CONTACT", "")
+    if not contact:
+        raise SystemExit("PIPELINE_CONTACT is required (email or URL)")
+    with httpx.Client(
+        headers={"User-Agent": f"DeuceDataPipeline/0.1 ({contact})"},
+        timeout=120,
+        follow_redirects=True,
+    ) as client:
+        n = sackmann.fetch_archive(Path(args.dest), client)
+    print(f"sackmann archive: {n} files downloaded into {args.dest}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="deuce-pipeline")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -176,6 +193,10 @@ def main(argv: list[str] | None = None) -> None:
     imp.set_defaults(func=cmd_import)
 
     sub.add_parser("score", help="recompute rarity scores and tiers").set_defaults(func=cmd_score)
+
+    fetch = sub.add_parser("fetch-sackmann", help="download the Sackmann data archive")
+    fetch.add_argument("--dest", default=str(DATA_DIR))
+    fetch.set_defaults(func=cmd_fetch_sackmann)
 
     args = parser.parse_args(argv)
     args.func(args)

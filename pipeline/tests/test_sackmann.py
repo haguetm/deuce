@@ -69,3 +69,18 @@ def test_major_titles_are_stat_rows(tmp_path):
     # "Slam A" is not a known major: counted as a Grand Slam, not per event
     assert rows["grand_slam_titles"] == 1
     assert rows["roland_garros_titles"] == 0
+
+
+def test_archive_listing_keeps_tour_files_only():
+    listing = {"siblings": [
+        {"rfilename": "atp/atp_players.csv"},
+        {"rfilename": "wta/wta_matches_2026.csv"},
+        {"rfilename": "atp/UPSTREAM_README.md"},
+        {"rfilename": "slam_pointbypoint/2024-wimbledon-points.csv"},
+        {"rfilename": "LICENSE"},
+    ]}
+    assert sackmann.archive_files(listing) == [
+        ("atp", "atp/atp_players.csv"),
+        ("wta", "wta/wta_matches_2026.csv"),
+        ("atp", "atp/UPSTREAM_README.md"),
+    ]

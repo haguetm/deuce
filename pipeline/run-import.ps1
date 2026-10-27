@@ -27,27 +27,17 @@ if (-not $env:DATABASE_URL) {
 if (-not $env:IMAGE_STORAGE_PROVIDER) { $env:IMAGE_STORAGE_PROVIDER = "local" }
 if (-not $env:PIPELINE_MIN_INTERVAL_S) { $env:PIPELINE_MIN_INTERVAL_S = "1.0" }
 
-# Sackmann datasets (CC BY-NC-SA 4.0, never committed)
-$DataDir = Join-Path $PipelineDir "data"
-New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
-foreach ($tour in @("atp", "wta")) {
-  $dir = Join-Path $DataDir "tennis_$tour"
-  if (Test-Path (Join-Path $dir ".git")) {
-    git -C $dir pull --ff-only --quiet
-  } else {
-    git clone --depth 1 --quiet "https://github.com/JeffSackmann/tennis_$tour" $dir
-  }
-  if ($LASTEXITCODE -ne 0) { Write-Error "git failed for tennis_$tour" }
-  $count = (Get-ChildItem $dir -Filter "${tour}_matches_*.csv" | Where-Object { $_.Name -match "^${tour}_matches_\d{4}\.csv$" }).Count
-  Write-Host "tennis_${tour}: $count match files"
-}
-
 $Venv = Join-Path $PipelineDir ".venv"
 $Cli = Join-Path $Venv "Scripts\deuce-pipeline.exe"
 if (-not (Test-Path $Cli)) {
   python -m venv $Venv
   & (Join-Path $Venv "Scripts\pip.exe") install --quiet -e $PipelineDir
 }
+
+# Sackmann datasets (CC BY-NC-SA 4.0, never committed). The original GitHub
+# repositories were removed in 2026: archival mirror, same files and license.
+& $Cli fetch-sackmann
+if ($LASTEXITCODE -ne 0) { Write-Error "Sackmann archive download failed" }
 
 Push-Location $PipelineDir
 try { & $Cli import --limit $Limit } finally { Pop-Location }
