@@ -39,6 +39,12 @@ def test_parse_player_reports_issues_instead_of_guessing():
     assert any("height" in i for i in p.issues)
 
 
+def test_multilingual_label_is_the_last_resort():
+    row = {"p": ROW["p"], "label_mul": {"value": "Zoé Testeuse"}}
+    assert wikidata.parse_player(row).name == "Zoé Testeuse"
+    assert wikidata.parse_player({**row, "label_fr": {"value": "Zoé T."}}).name == "Zoé T."
+
+
 def test_full_date_is_parsed():
     p = wikidata.parse_player({**ROW, "birth": {"value": "1990-04-12T00:00:00Z"}})
     assert p.birth_date == date(1990, 4, 12)

@@ -43,9 +43,11 @@ def top_candidates_query(limit: int, min_sitelinks: int = 0) -> str:
 # query service fails (StackOverflowError) on a single query joining all
 # these OPTIONAL clauses. Each group returns at most one row per player.
 _DETAIL_GROUPS = [
-    ("""(SAMPLE(?labelEn) AS ?label_en) (SAMPLE(?labelFr) AS ?label_fr)""",
+    # "mul" (all languages) now often replaces identical en/fr labels.
+    ("""(SAMPLE(?labelEn) AS ?label_en) (SAMPLE(?labelFr) AS ?label_fr) (SAMPLE(?labelMul) AS ?label_mul)""",
      """OPTIONAL {{ ?p rdfs:label ?labelEn . FILTER(LANG(?labelEn) = "en") }}
-  OPTIONAL {{ ?p rdfs:label ?labelFr . FILTER(LANG(?labelFr) = "fr") }}"""),
+  OPTIONAL {{ ?p rdfs:label ?labelFr . FILTER(LANG(?labelFr) = "fr") }}
+  OPTIONAL {{ ?p rdfs:label ?labelMul . FILTER(LANG(?labelMul) = "mul") }}"""),
     ("""(SAMPLE(?sex0) AS ?sex) (MIN(?birth0) AS ?birth) (SAMPLE(?hand0) AS ?hand)""",
      """OPTIONAL {{ ?p wdt:P21 ?sex0 }}
   OPTIONAL {{ ?p wdt:P569 ?birth0 }}
@@ -151,7 +153,7 @@ def parse_candidates(rows: list[dict]) -> list[tuple[str, int]]:
 def parse_player(row: dict) -> WikidataPlayer:
     qid = _qid(_value(row, "p")) or ""
     issues: list[str] = []
-    name = _value(row, "label_en") or _value(row, "label_fr") or ""
+    name = _value(row, "label_en") or _value(row, "label_fr") or _value(row, "label_mul") or ""
     if not name:
         issues.append("no English or French label")
 
