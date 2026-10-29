@@ -67,7 +67,8 @@ def test_scores_written_from_database(database_url):
         for i in range(10):
             pid = db.upsert_player(cur, _player(f"Q99999990{i}", f"Player {i}"), i * 1000, None, (None, None))
             db.upsert_stats(cur, pid, {"best_rank": 100 - i}, "sackmann_atp", "https://x")
-        inputs = [scoring.ScoreInput(q, {k: float(v) for k, v in s.items()}, v) for q, v, s in db.load_score_inputs(cur)]
+        inputs = [scoring.ScoreInput(q, {k: float(v) for k, v in s.items()}, v, links, hof, start)
+                  for q, v, s, links, hof, start in db.load_score_inputs(cur)]
         db.write_scores(cur, scoring.score_catalogue(inputs, scoring.load_config()))
         cur.execute("select wikidata_id from public.players where rarity = 'mythic'")
         assert [r[0] for r in cur.fetchall()] == ["Q999999909"]
