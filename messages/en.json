@@ -521,7 +521,8 @@
       "2026-10-26": {
         "title": "Golden boosters, missions and collection",
         "items": {
-          "reveal": "New opening: cards come out face up, stacked. Their halo hints at a pair of rarities, and their frame shows the exact rarity once on top.",
+          "reveal": "New opening: cards come out face up, stacked. Their halo hints at a pair of rarities, and their frame shows the exact rarity once on top. Spin the tube with your mouse or finger.",
+          "photos": "Photos framed on the face, and taken during their career for retired players.",
           "golden": "Golden booster: about one booster in 20, guaranteed by the 30th at the latest. Its last card is better.",
           "pity": "Top rarity guaranteed by the 300th booster at the latest, with a visible counter.",
           "daily": "Free daily booster, with a theme that follows the tennis calendar.",

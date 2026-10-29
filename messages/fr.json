@@ -521,7 +521,8 @@
       "2026-10-26": {
         "title": "Boosters dorés, missions et collection",
         "items": {
-          "reveal": "Nouvelle ouverture : les cartes sortent face visible, empilées. Leur halo indique une paire de raretés, et leur cadre la rareté exacte une fois découvertes.",
+          "reveal": "Nouvelle ouverture : les cartes sortent face visible, empilées. Leur halo indique une paire de raretés, et leur cadre la rareté exacte une fois découvertes. Le tube tourne à la souris ou au doigt.",
+          "photos": "Photos recadrées sur le visage, et prises pendant la carrière pour les joueurs retraités.",
           "golden": "Booster doré : environ un booster sur 20, garanti au 30e au plus tard. Sa dernière carte est meilleure.",
           "pity": "Garantie de rareté maximale au 300e booster au plus tard, compteur visible.",
           "daily": "Booster du jour gratuit, avec un thème qui suit le calendrier du tennis.",

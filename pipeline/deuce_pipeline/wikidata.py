@@ -11,6 +11,7 @@ from .http import HttpClient
 
 SPARQL_URL = "https://query.wikidata.org/sparql"
 TENNIS_PLAYER = "Q10833314"  # occupation: tennis player
+HALL_OF_FAME = "Q52454"  # award received: International Tennis Hall of Fame
 MALE, FEMALE = "Q6581097", "Q6581072"
 HANDS = {"Q3029952": "right", "Q789447": "left"}
 
@@ -67,9 +68,13 @@ _DETAIL_GROUPS = [
     ("""(SAMPLE(?frTitle) AS ?frwiki) (SAMPLE(?enTitle) AS ?enwiki)""",
      """OPTIONAL {{ ?fr schema:about ?p ; schema:isPartOf <https://fr.wikipedia.org/> ; schema:name ?frTitle }}
   OPTIONAL {{ ?en schema:about ?p ; schema:isPartOf <https://en.wikipedia.org/> ; schema:name ?enTitle }}"""),
-    ("""(SAMPLE(?atpId) AS ?atp_id) (SAMPLE(?wtaId) AS ?wta_id)""",
+    ("""(SAMPLE(?atpId) AS ?atp_id) (SAMPLE(?wtaId) AS ?wta_id) (SAMPLE(?category) AS ?commons_category)""",
      """OPTIONAL {{ ?p wdt:P536 ?atpId }}
-  OPTIONAL {{ ?p wdt:P597 ?wtaId }}"""),
+  OPTIONAL {{ ?p wdt:P597 ?wtaId }}
+  OPTIONAL {{ ?p wdt:P373 ?category }}"""),
+    ("""(SAMPLE(?links0) AS ?sitelinks) (COUNT(?hof) AS ?hall_of_fame)""",
+     f"""OPTIONAL {{{{ ?p wikibase:sitelinks ?links0 }}}}
+  OPTIONAL {{{{ ?p wdt:P166 ?hof . FILTER(?hof = wd:{HALL_OF_FAME}) }}}}"""),
 ]
 
 
@@ -114,6 +119,10 @@ class WikidataPlayer:
     enwiki_title: str | None
     atp_id: str | None
     wta_id: str | None
+    commons_category: str | None = None
+    # Wikipedia editions with an article on the player (lasting notoriety).
+    sitelinks: int | None = None
+    hall_of_fame: bool = False
     issues: list[str] = field(default_factory=list)
 
 
@@ -195,6 +204,9 @@ def parse_player(row: dict) -> WikidataPlayer:
         enwiki_title=_value(row, "enwiki"),
         atp_id=_value(row, "atp_id"),
         wta_id=_value(row, "wta_id"),
+        commons_category=_value(row, "commons_category"),
+        sitelinks=int(_value(row, "sitelinks")) if _value(row, "sitelinks") else None,
+        hall_of_fame=int(_value(row, "hall_of_fame") or 0) > 0,
         issues=issues,
     )
 

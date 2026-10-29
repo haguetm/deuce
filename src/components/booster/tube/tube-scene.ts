@@ -75,6 +75,11 @@ const SEAL_HALF = -0.9;
 const SEAL_OFF = -2.6;
 const FPS_WINDOW_MS = 2000;
 const DRAG_TO_PULL_PX = 50;
+/** Hand spin: one turn per ~300 px dragged, then inertia back to idle. */
+const SPIN_PER_PX = (Math.PI * 2) / 300;
+const SPIN_MAX_SPEED = 9;
+const SPIN_DAMPING = 2.5;
+const IDLE_SPEED = 0.2;
 
 type Stage =
   | { name: "rest" }
@@ -305,6 +310,9 @@ export function createTubeScene(
   let disposed = false;
   let dragFrom: number | null = null;
   let dragAngle = 0;
+  // Hand spin: last pointer x and time while held, speed (rad/s) after release.
+  let spinFrom: { x: number; time: number } | null = null;
+  let spinSpeed = 0;
   const pointer = new Vector2();
   const tilt = new Vector2();
   const raycaster = new Raycaster();
@@ -332,26 +340,62 @@ export function createTubeScene(
     raycaster.setFromCamera(pointer, camera);
     return raycaster.intersectObjects([seal, ring]).length > 0;
   };
+  // Seal: drag up to pull it. Anywhere else: hold and drag to spin the tube.
   const onPointerDown = (event: PointerEvent) => {
-    if (!enabled || stage.name !== "rest" || !hitsSeal(event)) return;
-    dragFrom = event.clientY;
+    if (stage.name !== "rest") return;
+    if (enabled && hitsSeal(event)) {
+      dragFrom = event.clientY;
+    } else {
+      spinFrom = { x: event.clientX, time: event.timeStamp };
+      spinSpeed = 0;
+      canvas.style.cursor = "grabbing";
+    }
     canvas.setPointerCapture(event.pointerId);
   };
   const onPointerMove = (event: PointerEvent) => {
     if (finePointer) {
+      // Clamped: a held pointer (spin, seal) keeps reporting moves far
+      // outside the canvas, which would tip the tube over.
       const rect = canvas.getBoundingClientRect();
+      const clamp = (v: number) => Math.max(-1, Math.min(1, v));
       tilt.set(
-        ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        ((event.clientY - rect.top) / rect.height) * 2 - 1,
+        clamp(((event.clientX - rect.left) / rect.width) * 2 - 1),
+        clamp(((event.clientY - rect.top) / rect.height) * 2 - 1),
       );
     }
-    if (dragFrom === null) return;
+    if (spinFrom) {
+      const delta = (event.clientX - spinFrom.x) * SPIN_PER_PX;
+      const seconds = (event.timeStamp - spinFrom.time) / 1000;
+      tube.rotation.y += delta;
+      if (seconds > 0) {
+        const speed = Math.max(
+          -SPIN_MAX_SPEED,
+          Math.min(SPIN_MAX_SPEED, delta / seconds),
+        );
+        spinSpeed = spinSpeed * 0.5 + speed * 0.5;
+      }
+      spinFrom = { x: event.clientX, time: event.timeStamp };
+      return;
+    }
+    if (dragFrom === null) {
+      if (finePointer && stage.name === "rest") {
+        canvas.style.cursor = enabled && hitsSeal(event) ? "pointer" : "grab";
+      }
+      return;
+    }
     const dy = Math.max(0, dragFrom - event.clientY);
     dragAngle =
       (Math.min(dy, DRAG_TO_PULL_PX * 1.5) / (DRAG_TO_PULL_PX * 1.5)) *
       SEAL_HALF;
   };
   const onPointerUp = (event: PointerEvent) => {
+    if (spinFrom) {
+      // A pause before letting go means no throw.
+      if (event.timeStamp - spinFrom.time > 80) spinSpeed = 0;
+      spinFrom = null;
+      canvas.style.cursor = finePointer ? "grab" : "";
+      return;
+    }
     if (dragFrom === null) return;
     const pulled = dragFrom - event.clientY >= DRAG_TO_PULL_PX;
     dragFrom = null;
@@ -378,7 +422,8 @@ export function createTubeScene(
       !fpsReported &&
       !document.hidden &&
       stage.name === "rest" &&
-      dragFrom === null
+      dragFrom === null &&
+      spinFrom === null
     ) {
       fpsTime += dt * 1000;
       fpsFrames += 1;
@@ -388,9 +433,13 @@ export function createTubeScene(
       }
     }
 
-    // Idle spin; turns the label back to the front once opening.
+    // Idle spin, held by the hand, or thrown and slowing down; turns the
+    // label back to the front once opening.
     if (stage.name === "rest") {
-      tube.rotation.y += 0.2 * dt;
+      if (!spinFrom) {
+        tube.rotation.y += (IDLE_SPEED + spinSpeed) * dt;
+        spinSpeed *= Math.exp(-SPIN_DAMPING * dt);
+      }
     } else {
       const target = Math.round(tube.rotation.y / (Math.PI * 2)) * Math.PI * 2;
       tube.rotation.y += (target - tube.rotation.y) * Math.min(1, dt * 6);
@@ -473,6 +522,9 @@ export function createTubeScene(
     pull() {
       if (stage.name !== "rest") return;
       dragFrom = null;
+      spinFrom = null;
+      spinSpeed = 0;
+      canvas.style.cursor = "";
       stage = {
         name: "pulling",
         from: sealPivot.rotation.x,

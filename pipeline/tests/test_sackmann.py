@@ -34,6 +34,17 @@ def test_players_mapping_uses_wikidata_column(tmp_path):
     assert mapping == {"Q999999990": "1001", "Q999999992": "1003"}
 
 
+def test_players_without_wikidata_id_are_found_by_name_and_birth_date(tmp_path):
+    d = _write(tmp_path)
+    with open(d / "atp_players.csv", "a", encoding="utf-8") as f:
+        f.write("1004,Dé,Delta,R,19930101,FRA,,\n1005,Eva,Echo,R,19940101,FRA,,\n1006,Eva,Echo,R,19940101,BEL,,\n")
+    identities = sackmann.read_identities(d, "atp")
+    assert identities[sackmann.identity_key("De Delta", "19930101")] == "1004"
+    assert identities[sackmann.identity_key("Bea Beta", "19910101")] == "1002"
+    assert sackmann.identity_key("Eva Echo", "19940101") not in identities  # two players: ambiguous
+    assert sackmann.identity_key("Ana Alpha", "19900101") not in identities  # matched by Wikidata id
+
+
 def test_career_stats(tmp_path):
     d = _write(tmp_path)
     stats = sackmann.compute_stats(d, "atp", {"1001", "1003"})

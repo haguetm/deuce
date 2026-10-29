@@ -66,7 +66,9 @@ export function CardFront({
             alt={name}
             width={image?.width ?? undefined}
             height={image?.height ?? undefined}
-            className="h-full w-full object-cover"
+            // Photos are cropped around the face, 36 % from the top
+            // (pipeline/deuce_pipeline/images.py): keep it in view.
+            className="h-full w-full object-cover object-[50%_36%]"
             loading="lazy"
           />
         ) : (

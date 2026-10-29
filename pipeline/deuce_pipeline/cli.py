@@ -18,7 +18,7 @@ from pathlib import Path
 import httpx
 
 from . import commons, db, images, pageviews, sackmann, scoring, storage, wikidata, wikipedia
-from .http import HttpClient
+from .http import GaveUp, HttpClient
 from .journal import Journal
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -26,6 +26,16 @@ THRESHOLDS = [5, 8, 10, 12, 15, 20, 25, 30, 40, 50]
 TARGET_RANGE = (2000, 6000)
 TARGET = 4000
 BATCH = 50
+# Era photos downloaded per player at most, looking for a visible face.
+ERA_CANDIDATES = 6
+# Pass the "tour statistics or Hall of Fame" rule without being players.
+NOT_PLAYERS = {
+    "Q52890": "Gustaf V of Sweden, in the Hall of Fame as a contributor",
+    "Q640916": "Gianni Clerici, in the Hall of Fame as a journalist",
+    "Q1000491": "Bud Collins, in the Hall of Fame as a journalist",
+    "Q433293": "Ted Tinling, in the Hall of Fame as a fashion designer",
+    "Q708881": "Arthur Nielsen, in the Hall of Fame as a contributor (market research)",
+}
 
 
 def propose_threshold(counts: dict[int, int]) -> int | None:
@@ -49,9 +59,11 @@ def cmd_count(args: argparse.Namespace) -> None:
     journal.close()
 
 
-def _load_sackmann(sackmann_dir: Path, journal: Journal) -> tuple[dict[str, tuple[str, str]], dict]:
-    """QID -> (tour, sackmann_id) and stats per (tour, sackmann_id)."""
+def _load_sackmann(sackmann_dir: Path, journal: Journal) -> tuple[dict, dict, dict]:
+    """QID -> (tour, sackmann_id), (name, birth date) -> (tour, sackmann_id)
+    for players without a Wikidata id, and stats per (tour, sackmann_id)."""
     by_qid: dict[str, tuple[str, str]] = {}
+    by_identity: dict[tuple[str, str], tuple[str, str]] = {}
     stats: dict[tuple[str, str], sackmann.PlayerStats] = {}
     for tour in ("atp", "wta"):
         tour_dir = sackmann_dir / f"tennis_{tour}"
@@ -59,12 +71,27 @@ def _load_sackmann(sackmann_dir: Path, journal: Journal) -> tuple[dict[str, tupl
             journal.issue("sackmann_missing", None, f"{tour_dir} not found, {tour.upper()} stats skipped")
             continue
         mapping = sackmann.read_players(tour_dir, tour)
+        identities = sackmann.read_identities(tour_dir, tour)
         for qid, pid in mapping.items():
             by_qid[qid] = (tour, pid)
-        for pid, s in sackmann.compute_stats(tour_dir, tour, set(mapping.values())).items():
+        for key, pid in identities.items():
+            # Same person on both tours is impossible; same key twice means ambiguity.
+            by_identity[key] = (tour, pid) if key not in by_identity else ("", "")
+        pids = set(mapping.values()) | set(identities.values())
+        for pid, s in sackmann.compute_stats(tour_dir, tour, pids).items():
             stats[(tour, pid)] = s
-        journal.info("sackmann %s: %d players with a Wikidata id", tour, len(mapping))
-    return by_qid, stats
+        journal.info("sackmann %s: %d players with a Wikidata id, %d by name and birth date",
+                     tour, len(mapping), len(identities))
+    return by_qid, by_identity, stats
+
+
+def _sackmann_entry(player, sack_by_qid, sack_by_identity, sack_stats):
+    if player.qid in sack_by_qid:
+        return sack_stats.get(sack_by_qid[player.qid])
+    if player.birth_date is None:
+        return None
+    key = sackmann.identity_key(player.name, player.birth_date.strftime("%Y%m%d"))
+    return sack_stats.get(sack_by_identity.get(key, ("", "")))
 
 
 def cmd_import(args: argparse.Namespace) -> None:
@@ -76,7 +103,7 @@ def cmd_import(args: argparse.Namespace) -> None:
     qids = [qid for qid, _ in wikidata.parse_candidates(rows)]
     journal.info("selected %d candidates", len(qids))
 
-    sack_by_qid, sack_stats = _load_sackmann(Path(args.sackmann_dir), journal)
+    sack = _load_sackmann(Path(args.sackmann_dir), journal)
     start, end = pageviews.window(date.today(), 12)
 
     with db.connect() as conn:
@@ -90,8 +117,25 @@ def cmd_import(args: argparse.Namespace) -> None:
                 if not player.name or not player.sex:
                     journal.count("players.skipped")
                     continue
-                with conn.transaction(), conn.cursor() as cur:
-                    _import_player(cur, client, store, player, sack_by_qid, sack_stats, start, end, args, journal)
+                stats_entry = _sackmann_entry(player, *sack)
+                # "Tennis player" on Wikidata includes kings and footballers who
+                # once played: a card needs tour matches or the Hall of Fame.
+                if player.qid in NOT_PLAYERS or (stats_entry is None and not player.hall_of_fame):
+                    journal.issue("not_a_tour_player", player.qid, NOT_PLAYERS.get(
+                        player.qid, f"{player.name}: no tour statistics, not in the Hall of Fame"))
+                    with conn.transaction(), conn.cursor() as cur:
+                        db.exclude_player(cur, player.qid)
+                    journal.count("players.skipped")
+                    continue
+                # One unreachable page must not stop a run of several hours:
+                # the player is rolled back and the next run picks them up.
+                try:
+                    with conn.transaction(), conn.cursor() as cur:
+                        _import_player(cur, client, store, player, stats_entry, start, end, args, journal)
+                except GaveUp as exc:
+                    journal.issue("http_failed", player.qid, str(exc))
+                    journal.count("players.failed")
+                    continue
                 journal.count("players.imported")
             journal.info("progress %d/%d", min(i + BATCH, len(qids)), len(qids))
 
@@ -100,16 +144,13 @@ def cmd_import(args: argparse.Namespace) -> None:
     journal.close()
 
 
-def _import_player(cur, client, store, player, sack_by_qid, sack_stats, start, end, args, journal) -> None:
+def _import_player(cur, client, store, player, stats_entry, start, end, args, journal) -> None:
     views = 0
     for project, title in (("en.wikipedia", player.enwiki_title), ("fr.wikipedia", player.frwiki_title)):
         if title:
             views += pageviews.fetch_views(client, project, title, start, end)
 
-    stats_entry = None
-    if player.qid in sack_by_qid:
-        stats_entry = sack_stats.get(sack_by_qid[player.qid])
-    else:
+    if stats_entry is None:
         journal.issue("no_stats", player.qid, "not found in Sackmann players files")
 
     player_id = db.upsert_player(
@@ -134,24 +175,55 @@ def _import_player(cur, client, store, player, sack_by_qid, sack_stats, start, e
 
     if store is None:
         return
-    if not player.commons_file:
-        journal.issue("no_photo", player.qid, "no image (P18) on Wikidata, silhouette shown")
-        return
-    image, reason = commons.fetch_image(client, player.commons_file)
+    career = (player.career_start_year or (stats_entry.first_year if stats_entry else None),
+              player.career_end_year or (stats_entry.last_year if stats_entry else None))
+    image, raw = _choose_photo(client, player, career, journal)
     if image is None:
-        journal.issue("photo_rejected", player.qid, f"{player.commons_file}: {reason}")
         return
-    body, width, height = images.to_card_webp(client.get_bytes(image.thumb_url))
+    body, width, height = images.to_card_webp(raw)
     key = storage.object_key(player.qid, body)
     store.put(key, body, "image/webp")
     db.upsert_primary_image(cur, player_id, image, key, width, height)
     journal.count("photos")
 
 
+def _choose_photo(client, player, career, journal):
+    """Wikidata's photo, unless the player has retired and that photo is not
+    from their career (or is missing or not free): then a dated photo of their
+    playing years from their Commons category, alone and face visible."""
+    primary = None
+    if player.commons_file:
+        primary, reason = commons.fetch_image(client, player.commons_file)
+        if primary is None:
+            journal.issue("photo_rejected", player.qid, f"{player.commons_file}: {reason}")
+    start, end = career
+    retired = end is not None and end < date.today().year - 1
+    if (start and end and player.commons_category
+            and (primary is None or (retired and not commons.is_era_photo(primary.year, career)))):
+        # Among the best ranked, the clearest single face wins.
+        best = None
+        candidates = commons.era_photos(client, player.commons_category, (start, end), player.name)
+        for candidate in candidates[:ERA_CANDIDATES]:
+            raw = client.get_bytes(candidate.thumb_url)
+            score = images.portrait_score(raw)
+            if score > 0 and (best is None or score > best[0]):
+                best = (score, candidate, raw)
+        if best is not None:
+            journal.count("photos.era")
+            return best[1], best[2]
+    if primary is None:
+        if not player.commons_file:
+            journal.issue("no_photo", player.qid, "no image (P18) on Wikidata, silhouette shown")
+        return None, None
+    return primary, client.get_bytes(primary.thumb_url)
+
+
 def _score(cur, journal: Journal) -> None:
+    for qid in NOT_PLAYERS:
+        db.exclude_player(cur, qid)
     cfg = scoring.load_config()
-    inputs = [scoring.ScoreInput(qid, {k: float(v) for k, v in stats.items()}, views)
-              for qid, views, stats in db.load_score_inputs(cur)]
+    inputs = [scoring.ScoreInput(qid, {k: float(v) for k, v in stats.items()}, views, sitelinks, hall_of_fame, start)
+              for qid, views, stats, sitelinks, hall_of_fame, start in db.load_score_inputs(cur)]
     scores = scoring.score_catalogue(inputs, cfg)
     db.write_scores(cur, scores)
     for tier, n in scoring.tier_sizes(len(inputs), cfg).items():

@@ -27,7 +27,8 @@ class Journal:
         self.logger = logging.getLogger(f"deuce.{command}.{stamp}")
         self.logger.setLevel(logging.INFO)
         formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-        for handler in (logging.FileHandler(self.log_path), logging.StreamHandler()):
+        # UTF-8 explicitly: Windows defaults to cp1252, which lacks "č" and co.
+        for handler in (logging.FileHandler(self.log_path, encoding="utf-8"), logging.StreamHandler()):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
@@ -42,7 +43,7 @@ class Journal:
         self.counters[f"issue.{kind}"] += 1
 
     def close(self) -> dict:
-        self.issues_path.write_text(json.dumps(self.issues, ensure_ascii=False, indent=2))
+        self.issues_path.write_text(json.dumps(self.issues, ensure_ascii=False, indent=2), encoding="utf-8")
         summary = dict(sorted(self.counters.items()))
         self.info("summary %s", json.dumps(summary))
         print(format_summary(summary, self.log_path, self.issues_path, len(self.issues)))

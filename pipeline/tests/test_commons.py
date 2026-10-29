@@ -48,5 +48,40 @@ def test_public_domain_without_author_is_accepted():
     assert image is not None and image.license_url
 
 
+def test_photo_year_from_date_taken_or_file_name():
+    response = _response("CC BY-SA 4.0")
+    response["query"]["pages"][0]["imageinfo"][0]["extmetadata"]["DateTimeOriginal"] = {"value": "2006-07-08 14:02"}
+    assert commons.parse_imageinfo("File:X.jpg", response)[0].year == 2006
+    assert commons.parse_imageinfo("File:X at Wimbledon 1998.jpg", _response("CC BY-SA 4.0"))[0].year == 1998
+    assert commons.parse_imageinfo("File:X.jpg", _response("CC BY-SA 4.0"))[0].year is None
+
+
+def _image(name, year):
+    return commons.CommonsImage(name, "", "a", "CC0", "", "", year)
+
+
+def test_era_photos_are_from_the_career_peak_first():
+    ranked = commons.rank_era_photos(
+        [_image("old", 2019), _image("late", 2009), _image("peak", 2001), _image("undated", None)],
+        (1993, 2009), "Zoé Testeuse",
+    )
+    assert [i.commons_file for i in ranked] == ["peak", "late"]
+
+
+def test_era_photos_named_after_the_player_come_first():
+    ranked = commons.rank_era_photos(
+        [_image("File:Davis Cup final 2001.jpg", 2001), _image("File:Zoé TESTEUSE at Wimbledon.jpg", 2008)],
+        (1993, 2009), "Zoé Testeuse",
+    )
+    assert ranked[0].commons_file == "File:Zoé TESTEUSE at Wimbledon.jpg"
+
+
+def test_dated_subcategories_inside_the_career_only():
+    titles = ["Category:X in 2019", "Category:X at the 2006 Wimbledon Championships",
+              "Category:X in 1995", "Category:Signatures of X"]
+    assert commons.dated_subcategories(titles, (1993, 2009)) == [
+        "Category:X in 1995", "Category:X at the 2006 Wimbledon Championships"]
+
+
 def test_missing_file():
     assert commons.parse_imageinfo("File:X.jpg", {"query": {"pages": [{"missing": True}]}})[0] is None

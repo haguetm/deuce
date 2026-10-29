@@ -14,19 +14,23 @@
 
 Voir `pipeline/README.md`. En résumé :
 
-1. Mettre à jour les clones Sackmann dans `pipeline/data/` (`git pull`).
+1. Mettre à jour les données Sackmann dans `pipeline/data/` (`deuce-pipeline fetch-sackmann`).
 2. `deuce-pipeline import --min-sitelinks <seuil>` : idempotent, ne touche ni aux raretés corrigées à la main ni aux photos masquées.
 3. Lire `pipeline/logs/*-issues.json` et reporter ci-dessous les problèmes nouveaux.
 4. `deuce-pipeline score` après tout changement de `config/rarity.json`.
 
 ## Règles de traitement
 
-- **Lien Wikidata ↔ Sackmann** : colonne `wikidata_id` des fichiers `atp_players.csv` et `wta_players.csv`. Un joueur sans correspondance n'a pas de statistiques (journalisé en `no_stats`), il n'est pas rapproché par le nom.
+- **Lien Wikidata ↔ Sackmann** : colonne `wikidata_id` des fichiers `atp_players.csv` et `wta_players.csv`. Les joueurs récents n'y ont souvent pas d'identifiant (Mirra Andreeva en 2026) : à défaut, rapprochement sur le nom (accents et ponctuation ignorés) **et** la date de naissance exacte, seulement pour les joueurs Sackmann sans identifiant Wikidata, et jamais quand deux joueurs partagent la même clé. Sans correspondance : pas de statistiques (journalisé en `no_stats`).
+- **Qui a une carte** : Wikidata classe « joueur de tennis » des rois, footballeurs ou chanteurs qui ont un jour joué (George VI, Paolo Maldini, Redfoo). Une carte exige des matchs du circuit principal dans les données Sackmann ou l'entrée au Hall of Fame international du tennis (P166 = Q52454). Sinon le joueur n'est pas importé (`not_a_tour_player`) et, s'il était déjà là, sort du catalogue (`in_catalog = false`, jamais remis à `true` automatiquement).
+- **Rareté** : `config/rarity.json`, calcul dans `pipeline/deuce_pipeline/scoring.py`. Moitié palmarès (Grand Chelem, finales, semaines n°1, titres, meilleur classement, bonus Hall of Fame qui compense l'absence de statistiques avant 1968), moitié popularité (moitié vues Wikipédia FR + EN sur 12 mois, moitié nombre d'éditions de Wikipédia qui ont un article sur le joueur, une notoriété durable).
 - **Titres** : finales gagnées dans les fichiers du circuit principal (`*_matches_YYYY.csv`) aux niveaux ATP `G, M, A, F` et WTA `G, P, PM, I, T1-T5, F`. Coupe Davis, Jeux olympiques, qualifications, challengers et ITF exclus. **Provisoire**, à comparer avec les palmarès officiels sur un échantillon.
 - **Semaines au n°1** : nombre de dates de classement où le joueur est n°1. Exact quand le classement est hebdomadaire, approximatif sur les périodes plus anciennes où il ne l'était pas.
 - **Pays** : nationalité sportive (P1532) sinon citoyenneté (P27), code ISO à deux lettres. Les pays disparus sans code ISO (URSS, Yougoslavie, Tchécoslovaquie) restent vides et sont journalisés.
 - **Dates imprécises** : une date Wikidata au mois ou à l'année près n'est pas complétée, la naissance reste vide.
 - **Photos** : licences acceptées CC BY, CC BY-SA, CC0 et domaine public. NC, ND, usage loyal et licences inconnues rejetées. Sans photo acceptable, la carte affiche une silhouette.
+- **Photo d'époque** : pour un joueur retraité dont la photo Wikidata (P18) n'est pas datée de sa carrière (date de prise de vue, sinon une année dans le nom du fichier), ou qui n'a pas de photo libre, le pipeline cherche dans sa catégorie Commons (P373, ses sous-catégories datées et « by year ») les photos libres de ses années de jeu. Classement : nom du joueur dans le nom du fichier, puis proximité du pic de carrière (40 % de la carrière). Parmi les 6 premières, la plus nette gagne : un seul visage, le plus grand possible ; les photos de groupe sont écartées. Sans candidate, la photo Wikidata reste.
+- **Cadrage** : chaque photo est recadrée au format de la carte (0,85) autour du visage détecté par YuNet (`pipeline/models/face_detection_yunet_2023mar.onnx`, MIT, dépôt `opencv/opencv_zoo`), visage à 36 % du haut ; sans visage, le haut de l'image est gardé.
 
 ## Données manquantes ou incertaines
 

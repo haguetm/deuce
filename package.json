@@ -19,7 +19,8 @@
     "settings:sync": "tsx --env-file=.env.local scripts/sync-private-settings.ts",
     "config:generate": "tsx scripts/generate-game-config-seed.ts",
     "simulate:economy": "tsx scripts/simulate-economy.ts",
-    "db:seed:dev": "tsx scripts/db/seed-dev.ts"
+    "db:seed:dev": "tsx scripts/db/seed-dev.ts",
+    "db:dev:aces": "tsx scripts/db/dev-aces.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

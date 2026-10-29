@@ -14,6 +14,9 @@ ROW = {
     "image": {"value": "http://commons.wikimedia.org/wiki/Special:FilePath/Zo%C3%A9%20Test%202019.jpg"},
     "career_start": {"value": "2008-01-01T00:00:00Z"},
     "frwiki": {"value": "Zoé Testeuse"},
+    "commons_category": {"value": "Zoé Testeuse"},
+    "sitelinks": {"value": "42"},
+    "hall_of_fame": {"value": "1"},
 }
 
 
@@ -29,6 +32,9 @@ def test_parse_player_maps_fields():
     assert p.commons_file == "File:Zoé Test 2019.jpg"
     assert p.career_start_year == 2008
     assert p.enwiki_title is None
+    assert p.commons_category == "Zoé Testeuse"
+    assert p.sitelinks == 42 and p.hall_of_fame
+    assert not wikidata.parse_player({**ROW, "hall_of_fame": {"value": "0"}}).hall_of_fame
 
 
 def test_parse_player_reports_issues_instead_of_guessing():

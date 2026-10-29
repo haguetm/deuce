@@ -18,6 +18,10 @@ import httpx
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "http"
 
 
+class GaveUp(RuntimeError):
+    """Still failing after every retry (network down, server overloaded)."""
+
+
 class HttpClient:
     def __init__(
         self,
@@ -68,7 +72,12 @@ class HttpClient:
 
         for attempt in range(self._max_retries):
             self._throttle(url)
-            response = self._client.get(url, params=params)
+            try:
+                response = self._client.get(url, params=params)
+            except httpx.TransportError:
+                # Connection reset or timeout: transient, retried like a 503.
+                time.sleep(min(2**attempt, 60))
+                continue
             if response.status_code in (429, 500, 502, 503, 504):
                 retry_after = response.headers.get("retry-after")
                 delay = float(retry_after) if retry_after and retry_after.isdigit() else 2**attempt
@@ -79,7 +88,7 @@ class HttpClient:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(response.content)
             return response.content
-        raise RuntimeError(f"giving up after {self._max_retries} attempts: {url}")
+        raise GaveUp(f"giving up after {self._max_retries} attempts: {url}")
 
     def get_json(self, url: str, params: dict[str, Any] | None = None, use_cache: bool = True) -> Any:
         return json.loads(self.get_bytes(url, params, use_cache))
