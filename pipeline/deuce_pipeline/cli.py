@@ -4,6 +4,7 @@
   deuce-pipeline import --limit 200        mini catalogue (most-linked players)
   deuce-pipeline import --min-sitelinks K  full catalogue above the threshold
   deuce-pipeline score                     recompute rarity scores and tiers
+  deuce-pipeline recrop                    re-crop every catalogue photo (same picture)
   deuce-pipeline fetch-sackmann            download the Sackmann data archive
 
 Every command is idempotent and writes a journal to pipeline/logs/.
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 from datetime import date
 from pathlib import Path
 
@@ -28,6 +30,20 @@ TARGET = 4000
 BATCH = 50
 # Era photos downloaded per player at most, looking for a visible face.
 ERA_CANDIDATES = 6
+# Larger Commons thumbnail fetched when the face crop of the first one is too
+# small for a sharp card (a standard Wikimedia thumbnail width).
+LARGE_THUMB = 1920
+# Photos checked by eye and refused: replaced by another photo of the player
+# showing a face, or the player leaves the catalogue.
+REJECTED_PHOTOS = {
+    "File:Commissioner Adrian Garcia at the 2024 Houston Martin Luther King Jr. Day Parade.jpg":
+        "a namesake (Houston commissioner), not the tennis player",
+    "File:Yuri Schukin.JPG": "head cut off by the crop",
+    "File:Schukin and Voltchkov 2006 Kremlin Cup.JPG": "two players, unsure which one is framed",
+    "File:Internationale tenniskampioenschappen te Hilversum, de spanjaard Molina verslage, Bestanddeelnr 919-3680.jpg":
+        "player too small to recognize",
+    "File:Ray Casey at the Ambassador Hotel tennis tournament, 1924.jpg": "player too small to recognize",
+}
 # Pass the "tour statistics or Hall of Fame" rule without being players.
 NOT_PLAYERS = {
     "Q52890": "Gustaf V of Sweden, in the Hall of Fame as a contributor",
@@ -178,12 +194,15 @@ def _import_player(cur, client, store, player, stats_entry, start, end, args, jo
     career = (player.career_start_year or (stats_entry.first_year if stats_entry else None),
               player.career_end_year or (stats_entry.last_year if stats_entry else None))
     image, raw = _choose_photo(client, player, career, journal)
+    if image is not None:
+        image, raw = _with_face(client, player.qid, player.name, player.commons_category,
+                                career, image, raw, journal)
     if image is None:
         # A card without a photo has no interest: out of the catalogue until one exists.
         db.set_photo_missing(cur, player_id, True)
         return
     db.set_photo_missing(cur, player_id, False)
-    body, width, height = images.to_card_webp(raw)
+    body, width, height = images.to_card_webp(_sharp_enough(client, image, raw))
     key = storage.object_key(player.qid, body)
     store.put(key, body, "image/webp")
     db.upsert_primary_image(cur, player_id, image, key, width, height)
@@ -215,7 +234,7 @@ def _choose_photo(client, player, career, journal):
             journal.count("photos.era")
             return best[1], best[2]
     if primary is None:
-        found = _lead_image(client, player)
+        found = _lead_image(client, player.qid, player.commons_file)
         if found is not None:
             journal.count("photos.wikipedia")
             return found
@@ -224,11 +243,54 @@ def _choose_photo(client, player, career, journal):
     return primary, client.get_bytes(primary.thumb_url)
 
 
-def _lead_image(client, player):
+def _sharp_enough(client, image, raw: bytes) -> bytes:
+    """The thumbnail, or a larger version of the picture when the face crop
+    would have fewer pixels than the card (blurry once displayed)."""
+    if images.ideal_crop_width(raw) >= images.CARD_WIDTH or "/thumb/" not in image.thumb_url:
+        return raw  # sharp enough, or already the original file
+    larger = re.sub(r"/\d+px-([^/]+)$", rf"/{LARGE_THUMB}px-\1", image.thumb_url)
+    original = re.sub(r"/thumb(/.+)/[^/]+$", r"\1", image.thumb_url)
+    for url in (larger, original):
+        try:
+            return client.get_bytes(url)
+        except httpx.HTTPStatusError:
+            continue  # no thumbnail wider than the original: take the original
+    return raw
+
+
+def _with_face(client, qid, name, category, career, image, raw, journal):
+    """The photo when a face shows in it. Otherwise another photo of the
+    player where one does (Wikipedia lead images, then the Commons category),
+    or (None, None): nobody is recognized on a wide shot or a drawing."""
+    if image.commons_file not in REJECTED_PHOTOS and images.has_face(raw):
+        return image, raw
+    found = _lead_image(client, qid, image.commons_file)
+    if found is None and category:
+        start, end = career
+        candidates = commons.era_photos(client, category, (start, end), name) if start and end else []
+        candidates += commons.category_photos(client, category, name)
+        best = None
+        seen = {image.commons_file}
+        candidates = [c for c in candidates if c.commons_file not in REJECTED_PHOTOS
+                      and not (c.commons_file in seen or seen.add(c.commons_file))]
+        for candidate in candidates[:ERA_CANDIDATES]:
+            candidate_raw = client.get_bytes(candidate.thumb_url)
+            score = images.portrait_score(candidate_raw)
+            if score > 0 and (best is None or score > best[0]):
+                best = (score, candidate, candidate_raw)
+        found = best[1:] if best else None
+    if found is None:
+        journal.issue("no_face", qid, f"{image.commons_file}: no face visible, out of the catalogue")
+        return None, None
+    journal.count("photos.face_alternative")
+    return found
+
+
+def _lead_image(client, qid, skip=None):
     """First free lead image of the player's Wikipedia articles showing one face."""
-    for name in wikipedia.lead_images(client, wikipedia.fetch_sitelinks(client, player.qid)):
-        if name == player.commons_file:
-            continue  # already rejected above
+    for name in wikipedia.lead_images(client, wikipedia.fetch_sitelinks(client, qid)):
+        if name == skip or name in REJECTED_PHOTOS:
+            continue  # already rejected
         image, _ = commons.fetch_image(client, name)
         if image is None:
             continue
@@ -254,6 +316,47 @@ def cmd_score(args: argparse.Namespace) -> None:
     journal = Journal("score")
     with db.connect() as conn, conn.transaction(), conn.cursor() as cur:
         _score(cur, journal)
+    journal.close()
+
+
+def cmd_recrop(args: argparse.Namespace) -> None:
+    """Crops every catalogue photo again with the current rules (images.py),
+    keeping the picture chosen by the last import."""
+    journal = Journal("recrop")
+    client = HttpClient()
+    store = storage.get_storage()
+    with db.connect() as conn:
+        with conn.cursor() as cur:
+            photos = db.load_primary_images(cur)
+        for n, (player_id, qid, commons_file, name, start, end) in enumerate(photos, 1):
+            try:
+                image, reason = commons.fetch_image(client, commons_file)
+                if image is None:
+                    journal.issue("photo_rejected", qid, f"{commons_file}: {reason}")
+                    continue
+                raw = client.get_bytes(image.thumb_url)
+                if image.commons_file in REJECTED_PHOTOS or not images.has_face(raw):
+                    category = wikipedia.fetch_commons_category(client, qid)
+                    image, raw = _with_face(client, qid, name, category, (start, end), image, raw, journal)
+                    if image is None:
+                        with conn.transaction(), conn.cursor() as cur:
+                            db.set_photo_missing(cur, player_id, True)
+                        continue
+                raw = _sharp_enough(client, image, raw)
+            except GaveUp as exc:
+                journal.issue("http_failed", qid, str(exc))
+                continue
+            body, width, height = images.to_card_webp(raw)
+            key = storage.object_key(qid, body)
+            store.put(key, body, "image/webp")
+            with conn.transaction(), conn.cursor() as cur:
+                db.upsert_primary_image(cur, player_id, image, key, width, height)
+                db.set_photo_missing(cur, player_id, False)
+            journal.count("photos")
+            if n % 200 == 0:
+                journal.info("progress %d/%d", n, len(photos))
+        with conn.transaction(), conn.cursor() as cur:
+            _score(cur, journal)  # players may have left the catalogue
     journal.close()
 
 
@@ -285,6 +388,7 @@ def main(argv: list[str] | None = None) -> None:
     imp.set_defaults(func=cmd_import)
 
     sub.add_parser("score", help="recompute rarity scores and tiers").set_defaults(func=cmd_score)
+    sub.add_parser("recrop", help="re-crop every catalogue photo").set_defaults(func=cmd_recrop)
 
     fetch = sub.add_parser("fetch-sackmann", help="download the Sackmann data archive")
     fetch.add_argument("--dest", default=str(DATA_DIR))

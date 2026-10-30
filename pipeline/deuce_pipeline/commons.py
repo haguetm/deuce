@@ -199,3 +199,12 @@ def era_photos(client: HttpClient, category: str, career: tuple[int, int], name:
         for image in _category_files(client, sub):
             found.setdefault(image.commons_file, image)
     return rank_era_photos(list(found.values()), career, name)
+
+
+def category_photos(client: HttpClient, category: str, name: str) -> list[CommonsImage]:
+    """Freely licensed photos of the player's Commons category, any date,
+    named after the player first."""
+    title = category if category.startswith("Category:") else f"Category:{category}"
+    surname = slugify(name).rsplit("-", 1)[-1]
+    return sorted(_category_files(client, title),
+                  key=lambda i: (surname not in slugify(i.commons_file), i.commons_file))

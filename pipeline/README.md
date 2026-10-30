@@ -65,7 +65,7 @@ Options d'`import` : `--skip-images`, `--skip-texts`, `--sackmann-dir`.
 3. Statistiques Sackmann reliées par la colonne `wikidata_id` : meilleur classement, semaines n°1, titres, titres et finales du Grand Chelem, victoires et défaites, surface de prédilection.
 4. Pages vues Wikipédia FR + EN sur les 12 derniers mois complets.
 5. Extraits Wikipédia FR et EN avec URL et numéro de révision (attribution CC BY-SA).
-6. Photo Commons : licence filtrée (CC BY, CC BY-SA, CC0, domaine public ; NC et ND rejetées), auteur et licence stockés. Pour un joueur retraité, photo de ses années de jeu prise dans sa catégorie Commons quand celle de Wikidata est plus récente (voir `docs/DATA.md`). Recadrage autour du visage (YuNet, `models/`), 400 px de large en WebP sans métadonnées EXIF, envoi vers le stockage.
+6. Photo Commons : licence filtrée (CC BY, CC BY-SA, CC0, domaine public ; NC et ND rejetées), auteur et licence stockés. Pour un joueur retraité, photo de ses années de jeu prise dans sa catégorie Commons quand celle de Wikidata est plus récente (voir `docs/DATA.md`). Une photo sans visage visible est remplacée par une autre du joueur, sinon le joueur sort du catalogue. Recadrage centré sur le visage (YuNet, `models/`), source plus grande téléchargée si le cadre a moins de 400 px, 400 px de large en WebP sans métadonnées EXIF, envoi vers le stockage. `deuce-pipeline recrop` refait ce recadrage pour tout le catalogue.
 7. Score de rareté et tiers selon `config/rarity.json`.
 
 Les corrections manuelles survivent à un nouvel import : `rarity_override`, `in_catalog` et le masquage des photos ne sont jamais écrasés.

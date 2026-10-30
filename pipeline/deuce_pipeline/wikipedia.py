@@ -63,6 +63,17 @@ def fetch_sitelinks(client: HttpClient, qid: str) -> dict[str, str]:
     return parse_sitelinks((data.get("entities") or {}).get(qid) or {})
 
 
+def fetch_commons_category(client: HttpClient, qid: str) -> str | None:
+    """Commons category (P373) of a Wikidata item."""
+    data = client.get_json(WIKIDATA_API, {"action": "wbgetentities", "ids": qid, "props": "claims", "format": "json"})
+    claims = (((data.get("entities") or {}).get(qid) or {}).get("claims") or {}).get("P373") or []
+    for claim in claims:
+        value = claim.get("mainsnak", {}).get("datavalue", {}).get("value")
+        if value:
+            return value
+    return None
+
+
 def parse_lead_image(data: dict) -> str | None:
     """Commons file name of an article's lead image (free licences only)."""
     for page in ((data.get("query") or {}).get("pages") or {}).values():

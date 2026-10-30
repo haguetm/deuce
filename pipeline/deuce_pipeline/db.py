@@ -125,6 +125,19 @@ def upsert_primary_image(cur: psycopg.Cursor, player_id: int, image: CommonsImag
     )
 
 
+def load_primary_images(cur: psycopg.Cursor) -> list[tuple]:
+    """(player id, Wikidata id, Commons file, name, career start, career end)
+    of every catalogue photo, and of players out for want of a usable one."""
+    cur.execute(
+        """
+        select p.id, p.wikidata_id, i.commons_file, p.name, p.career_start_year, p.career_end_year
+        from public.players p join public.player_images i on i.player_id = p.id and i.is_primary
+        where p.in_catalog or p.photo_missing order by p.id
+        """
+    )
+    return cur.fetchall()
+
+
 def load_score_inputs(cur: psycopg.Cursor):
     cur.execute(
         """
