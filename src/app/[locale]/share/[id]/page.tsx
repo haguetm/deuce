@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CardFront } from "@/components/card/card-front";
+import { PhotoCredits } from "@/components/card/photo-credits";
 import { Link } from "@/i18n/navigation";
 import { bestCardFront } from "@/lib/game/best-card";
 import { loadSharedOpening } from "@/lib/game/shared-opening";
@@ -53,6 +54,7 @@ export default async function SharePage({
           </li>
         ))}
       </ul>
+      <PhotoCredits cards={opening.cards} />
       <Link
         href="/boosters"
         className="rounded-full bg-ball px-6 py-3 font-semibold text-night"

@@ -110,10 +110,8 @@
   },
   "card": {
     "silhouette": "Photo indisponible",
-    "photoCredit": "Photo : {author}, {license}",
     "flag": "Drapeau : {country}",
-    "number": "#{number}/{total}",
-    "photoCreditShort": "Crédit photo"
+    "number": "#{number}/{total}"
   },
   "history": {
     "title": "Historique des ouvertures",
@@ -244,13 +242,10 @@
     "next": "Suivant",
     "page": "Page {page} sur {pages}",
     "copies": "×{count}",
-    "graded": "{count, plural, one {Gradée} other {# gradées}}",
     "wish": "Ajouter à ma liste de souhaits",
     "unwish": "Retirer de ma liste de souhaits",
     "inShowcase": "En vitrine",
     "toShowcase": "Vitrine",
-    "gradeConfirm": "Envoyer un exemplaire de {name} en gradation pour {fee} aces ? La note sera définitive.",
-    "grade": "Grader · {fee}",
     "recycleOneConfirm": "Recycler les doublons de {name} ? Un exemplaire est toujours gardé.",
     "recycleOne": "Recycler",
     "recycleTitle": "Recycler les doublons",
@@ -263,12 +258,21 @@
       "already_owned": "Tu as déjà cette carte.",
       "wishlist_full": "Ta liste de souhaits est pleine (50 cartes).",
       "insufficient_balance": "Pas assez d'aces.",
-      "no_ungraded_copy": "Tous tes exemplaires sont déjà gradés.",
-      "grading_queue_full": "3 gradations au maximum en même temps.",
       "not_owned": "Tu ne possèdes pas cette carte.",
       "invalid_showcase": "5 cartes au maximum dans la vitrine.",
       "nothing_to_recycle": "Rien à recycler.",
       "link_account_required": "Lie ton compte pour utiliser cette fonction."
+    },
+    "open": "Voir {name} de près",
+    "sortLabel": "Trier par",
+    "sort": {
+      "rarity": "Rareté",
+      "recent": "Obtenues récemment",
+      "number": "Numéro",
+      "name": "Nom",
+      "youngest": "Plus jeunes",
+      "oldest": "Plus âgés",
+      "country": "Pays"
     }
   },
   "collections": {
@@ -276,19 +280,6 @@
     "rolandGarrosChampions": "Vainqueurs de Roland-Garros",
     "worldNumberOnes": "N° 1 mondiaux",
     "grandSlamChampions": "Champions de Grand Chelem"
-  },
-  "grading": {
-    "title": "Gradation",
-    "empty": "Aucune carte en gradation. Choisis un exemplaire dans ta collection : il revient avec une note définitive.",
-    "pending": "prête le {date}",
-    "result": "{grade}/10 {label} · n° {certificate}",
-    "labels": {
-      "6": "Bon état",
-      "7": "Très bon état",
-      "8": "Excellent",
-      "9": "Presque parfait",
-      "10": "Parfait"
-    }
   },
   "missions": {
     "title": "Missions",
@@ -518,6 +509,18 @@
     "title": "Nouveautés",
     "subtitle": "Ce qui change dans le jeu, du plus récent au plus ancien.",
     "entries": {
+      "2026-10-29": {
+        "title": "Cartes et tube tout neufs",
+        "items": {
+          "cards": "Cartes redessinées : cadre métallique, aura et reflet holographique qui grandissent avec la rareté.",
+          "back": "Clique sur une carte pour la voir de près, l'incliner et la retourner : statistiques, parcours, biographie et crédits sont au dos.",
+          "sort": "Collection triable par rareté, date d'obtention, numéro, nom, âge ou pays.",
+          "reveal": "Les cartes les plus rares sortent en dernier, avec une explosion de lumière à leur couleur.",
+          "tube": "Nouveau tube de balles : plastique transparent, balles en feutre, étiquette brillante.",
+          "catalog": "Uniquement des joueurs avec photo, et beaucoup plus de joueurs du circuit.",
+          "grading": "Gradation retirée pour l'instant."
+        }
+      },
       "2026-10-26": {
         "title": "Boosters dorés, missions et collection",
         "items": {
@@ -534,6 +537,61 @@
           "trial": "Essai sans compte : deux boosters avant de créer son compte."
         }
       }
+    }
+  },
+  "viewer": {
+    "label": "Carte de {name}",
+    "close": "Fermer",
+    "previous": "Carte précédente",
+    "next": "Carte suivante",
+    "showBack": "Retourner la carte",
+    "showFront": "Voir la face",
+    "hint": "← → pour changer de carte · F pour retourner · Échap pour fermer"
+  },
+  "cardBack": {
+    "loading": "Chargement…",
+    "locked": "Obtiens cette carte pour découvrir son dos : statistiques, parcours et biographie.",
+    "born": "Naissance",
+    "age": "{age} ans",
+    "plays": "Jeu",
+    "hand": {
+      "right": "Droitier",
+      "left": "Gaucher"
+    },
+    "height": "Taille",
+    "career": "Carrière",
+    "since": "Depuis {year}",
+    "surface": "Surface préférée",
+    "surfaces": {
+      "hard": "Dur",
+      "clay": "Terre battue",
+      "grass": "Gazon",
+      "carpet": "Moquette"
+    },
+    "bestRank": "Meilleur classement",
+    "titles": "Titres",
+    "slams": "Grand Chelem",
+    "record": "Victoires–défaites",
+    "slamFinals": "Finales GC",
+    "weeksNo1": "Semaines n° 1",
+    "slam": {
+      "australian_open_titles": "{count} × Open d'Australie",
+      "roland_garros_titles": "{count} × Roland-Garros",
+      "wimbledon_titles": "{count} × Wimbledon",
+      "us_open_titles": "{count} × US Open"
+    },
+    "readMore": "Lire sur Wikipédia",
+    "photoCredit": "Photo : {author}, {license}",
+    "statsCredit": "Statistiques : {source}, {license}",
+    "textCredit": "Texte : Wikipédia, {license}"
+  },
+  "grading": {
+    "labels": {
+      "6": "Bon état",
+      "7": "Très bon état",
+      "8": "Excellent",
+      "9": "Presque parfait",
+      "10": "Parfait"
     }
   }
 }

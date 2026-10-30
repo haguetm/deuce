@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { CardFront } from "@/components/card/card-front";
+import { CardViewer } from "@/components/card/card-viewer";
 import { getPathname, Link } from "@/i18n/navigation";
 import { bestCard, fanOrder, openingSummary } from "@/lib/game/reveal";
 import type { DrawnCard, OpeningResult } from "@/lib/game/types";
@@ -10,7 +11,8 @@ import type { DrawnCard, OpeningResult } from "@/lib/game/types";
 /**
  * End of an opening: the cards in a fan (best one in the middle, larger) or
  * a grid for big formats, what was new, what duplicates are worth, and the
- * next actions: open another, see the collection, share the pull.
+ * next actions: open another, see the collection, share the pull. A card
+ * opens up close in the viewer, where it can be turned over.
  */
 export function RevealSummary({
   opening,
@@ -33,6 +35,8 @@ export function RevealSummary({
   const best = bestCard(cards);
   const { newCards, duplicates, duplicateAces } = openingSummary(cards);
   const fan = cards.length <= 5;
+  const shown = fan ? fanOrder(cards) : cards;
+  const [open, setOpen] = useState<number | null>(null);
 
   const onShare = async () => {
     if (!share) return;
@@ -65,7 +69,7 @@ export function RevealSummary({
 
       {fan ? (
         <ol className="flex w-full max-w-3xl items-end justify-center">
-          {fanOrder(cards).map((card, i, all) => {
+          {shown.map((card, i, all) => {
             const offset = i - (all.length - 1) / 2;
             const isBest = card === best;
             return (
@@ -76,16 +80,24 @@ export function RevealSummary({
                   transform: `rotate(${offset * 6}deg) translateY(${Math.abs(offset) * 10}px)`,
                 }}
               >
-                <SummaryCard card={card} opening={opening} />
+                <SummaryCard
+                  card={card}
+                  opening={opening}
+                  onOpen={() => setOpen(i)}
+                />
               </li>
             );
           })}
         </ol>
       ) : (
         <ol className="card-grid grid w-full max-w-5xl grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-7">
-          {cards.map((card) => (
+          {shown.map((card, i) => (
             <li key={card.slot}>
-              <SummaryCard card={card} opening={opening} />
+              <SummaryCard
+                card={card}
+                opening={opening}
+                onOpen={() => setOpen(i)}
+              />
             </li>
           ))}
         </ol>
@@ -129,6 +141,15 @@ export function RevealSummary({
           {t("missions")}
         </Link>
       </div>
+      {open !== null && (
+        <CardViewer
+          cards={shown}
+          index={open}
+          catalogSize={opening.catalog_size}
+          onIndex={setOpen}
+          onClose={() => setOpen(null)}
+        />
+      )}
       {shareState === "error" && (
         <p role="alert" className="text-sm text-cream/70">
           {t("shareError")}
@@ -141,22 +162,32 @@ export function RevealSummary({
 function SummaryCard({
   card,
   opening,
+  onOpen,
 }: {
   card: DrawnCard;
   opening: OpeningResult;
+  onOpen: () => void;
 }) {
   const t = useTranslations("booster");
+  const tCollection = useTranslations("collection");
   return (
-    <CardFront
-      compact
-      name={card.name}
-      countryCode={card.country_code}
-      rarity={card.rarity}
-      image={card.image}
-      badge={card.was_new ? t("new") : undefined}
-      highlight={card.was_wished ? t("wished") : undefined}
-      catalogNumber={card.catalog_number}
-      catalogSize={opening.catalog_size}
-    />
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={tCollection("open", { name: card.name })}
+      className="block w-full rounded-[0.9rem] text-left"
+    >
+      <CardFront
+        compact
+        name={card.name}
+        countryCode={card.country_code}
+        rarity={card.rarity}
+        image={card.image}
+        badge={card.was_new ? t("new") : undefined}
+        highlight={card.was_wished ? t("wished") : undefined}
+        catalogNumber={card.catalog_number}
+        catalogSize={opening.catalog_size}
+      />
+    </button>
   );
 }

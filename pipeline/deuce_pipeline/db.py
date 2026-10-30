@@ -5,7 +5,8 @@ Every upsert is keyed on a natural key (wikidata_id, (player_id, key),
 yields the same database. Manual corrections are never overwritten:
 rarity_override, in_catalog and image `hidden` flags are left untouched,
 except that a person who turns out not to be a tour player is taken out of
-the catalogue (in_catalog is never set back to true).
+the catalogue (in_catalog is never set back to true), and a player without a
+free photo is out until one is found (photo_missing).
 """
 from __future__ import annotations
 
@@ -60,6 +61,17 @@ def upsert_player(cur: psycopg.Cursor, p: WikidataPlayer, pageviews: int,
 def exclude_player(cur: psycopg.Cursor, qid: str) -> None:
     """Out of the catalogue: not a tour player (only ever sets in_catalog to false)."""
     cur.execute("update public.players set in_catalog = false where wikidata_id = %s and in_catalog", (qid,))
+
+
+def set_photo_missing(cur: psycopg.Cursor, player_id: int, missing: bool) -> None:
+    """A player without a free photo leaves the catalogue and comes back once
+    one is found. Other exclusions (manual, not a tour player) are kept."""
+    if missing:
+        cur.execute("update public.players set in_catalog = false, photo_missing = true "
+                    "where id = %s and in_catalog", (player_id,))
+    else:
+        cur.execute("update public.players set in_catalog = true, photo_missing = false "
+                    "where id = %s and photo_missing", (player_id,))
 
 
 def upsert_stats(cur: psycopg.Cursor, player_id: int, stats: dict[str, float],

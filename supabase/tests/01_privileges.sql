@@ -42,7 +42,7 @@ $$, array['is_admin', 'admin_set_image_hidden', 'open_booster', 'get_booster_sta
          'set_username', 'set_profile_preferences', 'set_showcase', 'get_my_profile', 'get_public_profile',
          'get_big_pulls', 'get_global_stats', 'share_opening', 'get_shared_opening', 'claim_referral',
          'get_referral_status', 'submit_grading', 'get_graded_cards', 'save_push_subscription',
-         'delete_push_subscription', 'get_push_subscription', 'get_collection'],
+         'delete_push_subscription', 'get_push_subscription', 'get_collection', 'get_card_back'],
    'authenticated can execute only the whitelisted functions');
 
 select * from finish();

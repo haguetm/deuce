@@ -14,13 +14,19 @@ import {
   Group,
   Material,
   Mesh,
+  MeshBasicMaterial,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
+  PlaneGeometry,
   PMREMGenerator,
   Points,
   PointsMaterial,
   Raycaster,
   Scene,
+  SphereGeometry,
+  Sprite,
+  SpriteMaterial,
   SRGBColorSpace,
   TorusGeometry,
   Vector2,
@@ -32,11 +38,13 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { TUBE_TIMING } from "./tube-timing";
 
 /**
- * Tennis-ball tube in 3D (Three.js, no React). Built from primitives: brushed
- * metal body, printed label, rims, aluminium seal with its pull ring. The
- * React wrapper drives it: pull() peels the seal to mid-course while the
- * server answers, resolve(golden) plays gold, puff and rising cards then
- * calls onEmerged, reject() reseals. Frame rate at rest is reported once.
+ * Tennis-ball tube in 3D (Three.js, no React). Built from primitives: clear
+ * glossy plastic with three felt balls inside, lacquered base and rims in
+ * the pack color, printed label, aluminium seal with its pull ring, and a
+ * halo, a light pool and twinkling stars around it. The React wrapper
+ * drives it: pull() peels the seal to mid-course while the server answers,
+ * resolve(golden) plays gold, puff and rising cards then calls onEmerged,
+ * reject() reseals. Frame rate at rest is reported once.
  */
 export interface TubeSceneOptions {
   wordmark: string;
@@ -67,9 +75,10 @@ export interface TubeScene {
   dispose(): void;
 }
 
-const RADIUS = 1;
-const HEIGHT = 3.2;
+const RADIUS = 0.68;
+const HEIGHT = 4;
 const TOP = HEIGHT / 2;
+const BALL = RADIUS * 0.94;
 /** Seal angles (radians, around its back edge). */
 const SEAL_HALF = -0.9;
 const SEAL_OFF = -2.6;
@@ -79,7 +88,7 @@ const DRAG_TO_PULL_PX = 50;
 const SPIN_PER_PX = (Math.PI * 2) / 300;
 const SPIN_MAX_SPEED = 9;
 const SPIN_DAMPING = 2.5;
-const IDLE_SPEED = 0.2;
+const IDLE_SPEED = 0.35;
 
 type Stage =
   | { name: "rest" }
@@ -91,6 +100,9 @@ type Stage =
 
 const ease = (t: number) => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
 
+const shade = (hex: string, lightness: number) =>
+  `#${new Color(hex).offsetHSL(0, 0, lightness).getHexString()}`;
+
 function drawLabel(
   canvas: HTMLCanvasElement,
   options: TubeSceneOptions,
@@ -99,20 +111,92 @@ function drawLabel(
 ) {
   const ctx = canvas.getContext("2d")!;
   const { width: w, height: h } = canvas;
-  ctx.fillStyle = pack;
+  const { cream, ball, gold } = options.colors;
+  const deep = shade(pack, -0.3);
+
+  // Glossy band: light from the top, deeper at the bottom.
+  const bg = ctx.createLinearGradient(0, 0, 0, h);
+  bg.addColorStop(0, shade(pack, 0.16));
+  bg.addColorStop(0.45, pack);
+  bg.addColorStop(1, deep);
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
+
+  // Speed stripes all around.
+  ctx.save();
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = cream;
+  for (let x = -h; x < w + h; x += 90) {
+    ctx.beginPath();
+    ctx.moveTo(x, h);
+    ctx.lineTo(x + 34, h);
+    ctx.lineTo(x + 34 + h * 0.6, 0);
+    ctx.lineTo(x + h * 0.6, 0);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Ball-colored bands, each with a gold pinstripe.
+  ctx.fillStyle = ball;
+  ctx.fillRect(0, h * 0.03, w, h * 0.05);
+  ctx.fillRect(0, h * 0.92, w, h * 0.05);
+  ctx.fillStyle = gold;
+  ctx.fillRect(0, h * 0.1, w, h * 0.012);
+  ctx.fillRect(0, h * 0.89, w, h * 0.012);
+
   ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
   const face = (cx: number) => {
-    ctx.fillStyle = options.colors.cream;
-    ctx.font = `700 ${h * 0.22}px ${options.font}`;
-    ctx.fillText(options.wordmark.split("").join(" "), cx, h * 0.42);
-    ctx.font = `500 ${h * 0.11}px ${options.font}`;
-    ctx.fillText(label, cx, h * 0.62);
-    ctx.fillStyle = options.colors.ball;
-    for (const dx of [-1, 0, 1]) {
-      ctx.beginPath();
-      ctx.arc(cx + dx * h * 0.16, h * 0.82, h * 0.055, 0, Math.PI * 2);
-      ctx.fill();
+    // Court lines behind the wordmark.
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = cream;
+    ctx.lineWidth = h * 0.012;
+    const cw = h * 1.5;
+    const top = h * 0.17;
+    const ch = h * 0.66;
+    ctx.strokeRect(cx - cw / 2, top, cw, ch);
+    ctx.strokeRect(cx - cw * 0.36, top, cw * 0.72, ch);
+    ctx.beginPath();
+    ctx.moveTo(cx, top);
+    ctx.lineTo(cx, top + ch);
+    ctx.stroke();
+    ctx.restore();
+
+    // Wordmark: thick, outlined, with a drop shadow.
+    const word = options.wordmark.split("").join(" ");
+    ctx.font = `900 ${h * 0.24}px ${options.font}`;
+    ctx.lineJoin = "round";
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillText(word, cx + h * 0.012, h * 0.436);
+    ctx.lineWidth = h * 0.03;
+    ctx.strokeStyle = deep;
+    ctx.strokeText(word, cx, h * 0.42);
+    const text = ctx.createLinearGradient(0, h * 0.3, 0, h * 0.54);
+    text.addColorStop(0, "white");
+    text.addColorStop(1, cream);
+    ctx.fillStyle = text;
+    ctx.fillText(word, cx, h * 0.42);
+
+    // Booster name in a ball-colored pill.
+    ctx.font = `800 ${h * 0.1}px ${options.font}`;
+    const name = label.toUpperCase();
+    const pill = Math.max(ctx.measureText(name).width + h * 0.18, h * 0.5);
+    ctx.fillStyle = ball;
+    ctx.beginPath();
+    ctx.roundRect(cx - pill / 2, h * 0.6, pill, h * 0.14, h * 0.07);
+    ctx.fill();
+    ctx.fillStyle = deep;
+    ctx.fillText(name, cx, h * 0.672);
+
+    ctx.fillStyle = "white";
+    for (const [dx, dy, r] of [
+      [-0.64, 0.3, 0.04],
+      [0.68, 0.52, 0.03],
+      [-0.5, 0.76, 0.024],
+      [0.56, 0.22, 0.022],
+    ]) {
+      star(ctx, cx + dx * h, dy * h, r * h);
     }
   };
   // Front: middle of the texture. Back: the seam, drawn as two halves at
@@ -120,6 +204,58 @@ function drawLabel(
   face(w / 2);
   face(0);
   face(w);
+}
+
+function star(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    const d = i % 2 === 0 ? r : r * 0.28;
+    ctx.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d);
+  }
+  ctx.fill();
+}
+
+/** Optic-yellow felt with its white seam, wrapped around a sphere. */
+function ballTexture(color: string): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 512, 256);
+  for (let i = 0; i < 9000; i++) {
+    ctx.fillStyle = i % 2 ? "rgba(255,255,255,0.10)" : "rgba(60,80,0,0.10)";
+    ctx.fillRect(Math.random() * 512, Math.random() * 256, 2, 2);
+  }
+  ctx.strokeStyle = "rgba(255,255,255,0.95)";
+  ctx.lineWidth = 9;
+  ctx.shadowColor = "rgba(255,255,255,0.6)";
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  for (let x = 0; x <= 512; x += 4) {
+    const y = 128 + 62 * Math.sin((x / 512) * Math.PI * 4);
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+/** Soft radial glow, white in the middle: halo, light pool, stars. */
+function glowTexture(): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.35, "rgba(255,255,255,0.45)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 256);
+  return new CanvasTexture(canvas);
 }
 
 export function createTubeScene(
@@ -142,87 +278,188 @@ export function createTubeScene(
   scene.environment = environment;
 
   const camera = new PerspectiveCamera(28, 1, 0.1, 100);
-  camera.position.set(0, 1.1, 9.5);
+  camera.position.set(0, 1.1, 10.2);
   camera.lookAt(0, 0.4, 0);
 
-  scene.add(new AmbientLight(new Color(1, 1, 1), 0.35));
-  const key = new DirectionalLight(new Color(1, 1, 1), 1.6);
+  scene.add(new AmbientLight(new Color(1, 1, 1), 0.45));
+  const key = new DirectionalLight(new Color(1, 1, 1), 2.2);
   key.position.set(3, 5, 6);
   scene.add(key);
-  const rim = new DirectionalLight(new Color(1, 1, 1), 0.8);
-  rim.position.set(-4, 2, -3);
-  scene.add(rim);
+  // Colored rims: the ball color on one side, the pack color on the other.
+  const rimBall = new DirectionalLight(new Color(options.colors.ball), 1.4);
+  rimBall.position.set(-5, 2, -2);
+  scene.add(rimBall);
+  const rimPack = new DirectionalLight(new Color(options.colors.pack), 2);
+  rimPack.position.set(5, -1, -3);
+  scene.add(rimPack);
+
+  // Halo behind the tube, light pool under it, stars around -----------------
+  const glow = glowTexture();
+  const haloColor = (pack: string) =>
+    new Color(pack).lerp(new Color(options.colors.ball), 0.35);
+  const haloMaterial = new SpriteMaterial({
+    map: glow,
+    color: haloColor(options.colors.pack),
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+    blending: AdditiveBlending,
+  });
+  const halo = new Sprite(haloMaterial);
+  // Fades out inside the canvas: no hard edge on its borders.
+  halo.scale.set(3.4, 5.6, 1);
+  halo.position.set(0, 0.3, -2.5);
+  scene.add(halo);
+  const floor = new Mesh(
+    new PlaneGeometry(2.8, 2.8),
+    new MeshBasicMaterial({
+      map: glow,
+      color: new Color(options.colors.ball),
+      transparent: true,
+      opacity: 0.3,
+      depthWrite: false,
+      blending: AdditiveBlending,
+    }),
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -TOP - 0.25;
+  scene.add(floor);
+
+  const starGeometry = new BufferGeometry();
+  const starPositions = new Float32Array(40 * 3);
+  for (let i = 0; i < 40; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = RADIUS + 0.5 + Math.random() * 1.2;
+    starPositions.set(
+      [Math.cos(a) * r, (Math.random() - 0.5) * HEIGHT * 1.2, Math.sin(a) * r],
+      i * 3,
+    );
+  }
+  starGeometry.setAttribute(
+    "position",
+    new Float32BufferAttribute(starPositions, 3),
+  );
+  const starMaterial = new PointsMaterial({
+    map: glow,
+    color: new Color(options.colors.ball).lerp(new Color(0xffffff), 0.4),
+    size: 0.16,
+    transparent: true,
+    opacity: 0.8,
+    depthWrite: false,
+    blending: AdditiveBlending,
+  });
+  const stars = new Points(starGeometry, starMaterial);
+  scene.add(stars);
 
   // Tube --------------------------------------------------------------------
   const tube = new Group();
   scene.add(tube);
 
-  const metal = new MeshStandardMaterial({
-    color: options.colors.metal,
-    metalness: 0.9,
-    roughness: 0.35,
+  // Lacquered base and rims in the pack color (gold for a golden booster).
+  const lacquer = new MeshPhysicalMaterial({
+    color: options.colors.pack,
+    metalness: 0.35,
+    roughness: 0.18,
+    clearcoat: 1,
+    clearcoatRoughness: 0.08,
   });
-  const metalColor = new Color(options.colors.metal);
+  const packColor = new Color(options.colors.pack);
   const goldColor = new Color(options.colors.gold);
-
-  const body = new Mesh(
-    new CylinderGeometry(RADIUS, RADIUS, HEIGHT, 72, 1, true),
-    metal,
+  const base = new Mesh(
+    new CylinderGeometry(RADIUS * 1.06, RADIUS * 1.02, 0.34, 96),
+    lacquer,
   );
+  base.position.y = -TOP + 0.13;
+  tube.add(base);
+  const rimGeometry = new TorusGeometry(RADIUS * 1.02, 0.06, 20, 96);
+  for (const y of [TOP, -TOP + 0.3]) {
+    const r = new Mesh(rimGeometry, lacquer);
+    r.rotation.x = Math.PI / 2;
+    r.position.y = y;
+    tube.add(r);
+  }
+
+  // Three felt balls, stacked inside.
+  // A shade deeper: the tone mapping and the plastic lighten it back.
+  const ballMap = ballTexture(shade(options.colors.ball, -0.14));
+  const ballMaterial = new MeshPhysicalMaterial({
+    map: ballMap,
+    roughness: 0.9,
+    sheen: 0.6,
+    sheenRoughness: 0.6,
+    sheenColor: new Color(options.colors.ball),
+  });
+  const ballGeometry = new SphereGeometry(BALL, 48, 32);
+  for (let i = 0; i < 3; i++) {
+    const b = new Mesh(ballGeometry, ballMaterial);
+    b.position.y = -TOP + 0.3 + BALL + (i * (HEIGHT - 0.42)) / 3;
+    b.rotation.set(i * 0.9, i * 1.7, i * 0.4);
+    tube.add(b);
+  }
+
+  // Clear, glossy plastic, drawn after the balls so they show through.
+  const plastic = new MeshPhysicalMaterial({
+    color: 0xffffff,
+    metalness: 0,
+    roughness: 0.04,
+    clearcoat: 1,
+    clearcoatRoughness: 0.03,
+    transparent: true,
+    opacity: 0.12,
+    envMapIntensity: 2.5,
+    depthWrite: false,
+    side: DoubleSide,
+  });
+  const body = new Mesh(
+    new CylinderGeometry(RADIUS, RADIUS, HEIGHT, 96, 1, true),
+    plastic,
+  );
+  body.renderOrder = 2;
   tube.add(body);
 
   const labelCanvas = document.createElement("canvas");
-  labelCanvas.width = 1024;
-  labelCanvas.height = 384;
+  labelCanvas.width = 2048;
+  labelCanvas.height = 640;
   drawLabel(labelCanvas, options, options.label, options.colors.pack);
   const labelTexture = new CanvasTexture(labelCanvas);
   labelTexture.colorSpace = SRGBColorSpace;
   labelTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
   const label = new Mesh(
-    new CylinderGeometry(RADIUS * 1.004, RADIUS * 1.004, 1.5, 72, 1, true),
-    new MeshStandardMaterial({
+    new CylinderGeometry(RADIUS * 1.006, RADIUS * 1.006, 1.75, 96, 1, true),
+    new MeshPhysicalMaterial({
       map: labelTexture,
-      metalness: 0.15,
-      roughness: 0.55,
+      metalness: 0.1,
+      roughness: 0.3,
+      clearcoat: 1,
+      clearcoatRoughness: 0.12,
       // Brand colors as printed, not washed out by the tone mapping.
       toneMapped: false,
     }),
   );
   // The texture middle (u = 0.5) faces the camera.
   label.rotation.y = Math.PI;
-  label.position.y = -0.1;
+  label.position.y = -0.05;
+  label.renderOrder = 3;
   tube.add(label);
-
-  const rimGeometry = new TorusGeometry(RADIUS, 0.055, 16, 72);
-  for (const y of [TOP, -TOP]) {
-    const ring = new Mesh(rimGeometry, metal);
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = y;
-    tube.add(ring);
-  }
-  const bottom = new Mesh(new CircleGeometry(RADIUS, 72), metal);
-  bottom.rotation.x = Math.PI / 2;
-  bottom.position.y = -TOP;
-  tube.add(bottom);
 
   // Seal: pivots around its back edge to peel off.
   const aluminium = new MeshStandardMaterial({
     color: options.colors.aluminium,
     metalness: 1,
-    roughness: 0.22,
+    roughness: 0.16,
     side: DoubleSide,
     transparent: true,
   });
   const sealPivot = new Group();
-  sealPivot.position.set(0, TOP + 0.02, -RADIUS * 0.96);
+  sealPivot.position.set(0, TOP + 0.05, -RADIUS * 0.98);
   tube.add(sealPivot);
-  const seal = new Mesh(new CircleGeometry(RADIUS * 0.96, 72), aluminium);
+  const seal = new Mesh(new CircleGeometry(RADIUS * 0.98, 96), aluminium);
   seal.rotation.x = -Math.PI / 2;
-  seal.position.z = RADIUS * 0.96;
+  seal.position.z = RADIUS * 0.98;
   sealPivot.add(seal);
-  const ring = new Mesh(new TorusGeometry(0.17, 0.035, 12, 32), aluminium);
+  const ring = new Mesh(new TorusGeometry(0.16, 0.035, 12, 32), aluminium);
   ring.rotation.x = -Math.PI / 2;
-  ring.position.set(0, 0.03, RADIUS * 1.75);
+  ring.position.set(0, 0.03, RADIUS * 1.98 + 0.08);
   sealPivot.add(ring);
 
   // Cards inside, rising at the end.
@@ -238,7 +475,7 @@ export function createTubeScene(
     roughness: 0.4,
   });
   for (let i = 0; i < 3; i++) {
-    const card = new Mesh(new BoxGeometry(1.1, 1.55, 0.02), [
+    const card = new Mesh(new BoxGeometry(1.0, 1.4, 0.02), [
       edgeMaterial,
       edgeMaterial,
       edgeMaterial,
@@ -260,7 +497,7 @@ export function createTubeScene(
     const velocities = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const r = Math.random() * 0.8;
+      const r = Math.random() * RADIUS;
       positions.set(
         [Math.cos(angle) * r, TOP + 0.1, Math.sin(angle) * r],
         i * 3,
@@ -444,6 +681,11 @@ export function createTubeScene(
       const target = Math.round(tube.rotation.y / (Math.PI * 2)) * Math.PI * 2;
       tube.rotation.y += (target - tube.rotation.y) * Math.min(1, dt * 6);
     }
+    // Floats gently; the halo breathes, the stars turn and twinkle.
+    tube.position.y = 0.08 * Math.sin(now / 650);
+    haloMaterial.opacity = 0.75 + 0.2 * Math.sin(now / 500);
+    stars.rotation.y += dt * 0.25;
+    starMaterial.opacity = 0.55 + 0.35 * Math.sin(now / 280);
     tube.rotation.x += (tilt.y * 0.14 - tube.rotation.x) * Math.min(1, dt * 4);
     tube.rotation.z += (-tilt.x * 0.14 - tube.rotation.z) * Math.min(1, dt * 4);
 
@@ -477,7 +719,8 @@ export function createTubeScene(
         const elapsed = now - stage.start;
         if (stage.golden) {
           const g = ease(elapsed / TUBE_TIMING.golden);
-          metal.color.copy(metalColor).lerp(goldColor, g);
+          lacquer.color.copy(packColor).lerp(goldColor, g);
+          haloMaterial.color.lerp(goldColor, g);
           animateParticles(
             sparkles,
             elapsed / (TUBE_TIMING.golden + TUBE_TIMING.puff),
@@ -487,9 +730,12 @@ export function createTubeScene(
         if (puffT >= 0) {
           sealPivot.rotation.x =
             SEAL_HALF + (SEAL_OFF - SEAL_HALF) * ease(puffT);
-          sealPivot.position.y = TOP + 0.02 + 1.5 * ease(puffT);
+          sealPivot.position.y = TOP + 0.05 + 1.5 * ease(puffT);
           aluminium.opacity = 1 - ease(puffT);
           animateParticles(puff, puffT);
+          // The halo flares as the seal pops.
+          const flare = 1 + 0.5 * Math.sin(Math.min(puffT, 1) * Math.PI);
+          halo.scale.set(3.4 * flare, 5.6 * flare, 1);
         }
         const riseT = (elapsed - goldMs - TUBE_TIMING.puff) / TUBE_TIMING.rise;
         if (riseT >= 0) {
@@ -512,9 +758,13 @@ export function createTubeScene(
 
   // API -------------------------------------------------------------------------
   return {
-    setLabel(text, packColor) {
-      drawLabel(labelCanvas, options, text, packColor);
+    setLabel(text, color) {
+      drawLabel(labelCanvas, options, text, color);
       labelTexture.needsUpdate = true;
+      packColor.set(color);
+      lacquer.color.set(color);
+      rimPack.color.set(color);
+      haloMaterial.color.copy(haloColor(color));
     },
     setEnabled(value) {
       enabled = value;
@@ -553,7 +803,12 @@ export function createTubeScene(
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerUp);
-      const textures = new Set<Texture>([labelTexture, environment]);
+      const textures = new Set<Texture>([
+        labelTexture,
+        environment,
+        glow,
+        ballMap,
+      ]);
       const materials = new Set<Material>();
       scene.traverse((object: Object3D) => {
         const mesh = object as Mesh;

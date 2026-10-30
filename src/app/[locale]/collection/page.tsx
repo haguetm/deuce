@@ -5,18 +5,12 @@ import {
 } from "next-intl/server";
 import { RARITIES, type Rarity } from "@config/game";
 import { CountryFlag } from "@/components/card/country-flag";
-import {
-  CollectionCard,
-  type CollectionCardData,
-} from "@/components/collection/collection-card";
+import type { CollectionCardData } from "@/components/collection/collection-card";
+import { CollectionGrid } from "@/components/collection/collection-grid";
 import {
   RecyclePanel,
   type RecyclePreview,
 } from "@/components/collection/recycle-panel";
-import {
-  GradedList,
-  type GradedCard,
-} from "@/components/collection/graded-list";
 import { Link, redirect } from "@/i18n/navigation";
 import {
   createSupabaseServerClient,
@@ -29,6 +23,16 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 48;
 const FILTERS = ["owned", "missing", "wished", "duplicates", "all"] as const;
 type Filter = (typeof FILTERS)[number];
+const SORTS = [
+  "rarity",
+  "recent",
+  "number",
+  "name",
+  "youngest",
+  "oldest",
+  "country",
+] as const;
+type Sort = (typeof SORTS)[number];
 
 interface Albums {
   nations: {
@@ -73,10 +77,13 @@ export default async function CollectionPage({
   const country = one(sp.country)?.match(/^[A-Za-z]{2}$/)?.[0];
   const set = one(sp.set)?.match(/^[A-Za-z0-9]{1,40}$/)?.[0];
   const q = one(sp.q)?.slice(0, 60);
+  const sort: Sort = SORTS.includes(one(sp.sort) as Sort)
+    ? (one(sp.sort) as Sort)
+    : "rarity";
   const page = Math.max(1, Number(one(sp.page) ?? 1) || 1);
 
   const supabase = await createSupabaseServerClient();
-  const [collection, albums, preview, graded, state] = await Promise.all([
+  const [collection, albums, preview] = await Promise.all([
     supabase.rpc("get_collection", {
       p_filter: filter,
       p_rarity: rarity ?? null,
@@ -85,13 +92,12 @@ export default async function CollectionPage({
       p_query: q ?? null,
       p_offset: (page - 1) * PAGE_SIZE,
       p_limit: PAGE_SIZE,
+      p_sort: sort,
     }),
     supabase.rpc("get_albums"),
     supabase.rpc("recycle_preview"),
-    supabase.rpc("get_graded_cards"),
-    supabase.rpc("get_booster_state"),
   ]);
-  for (const r of [collection, albums, preview, graded, state])
+  for (const r of [collection, albums, preview])
     if (r.error) throw new Error(r.error.message);
 
   const data = collection.data as CollectionPageData;
@@ -104,12 +110,21 @@ export default async function CollectionPage({
   const { distinct, copies, catalog_size: catalogSize } = data.stats;
   const completion = catalogSize ? (100 * distinct) / catalogSize : 0;
   const showcase = (data.stats.showcase ?? []).map(Number);
-  const aces = Number((state.data as { aces?: number }).aces ?? 0);
   const pages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
 
   const query = (patch: Record<string, string | number | undefined>) => {
     const next: Record<string, string> = {};
-    const merged = { view, filter, rarity, country, set, q, page, ...patch };
+    const merged = {
+      view,
+      filter,
+      rarity,
+      country,
+      set,
+      q,
+      sort,
+      page,
+      ...patch,
+    };
     for (const [k, v] of Object.entries(merged))
       if (v !== undefined && v !== "" && !(k === "page" && v === 1))
         next[k] = String(v);
@@ -133,10 +148,7 @@ export default async function CollectionPage({
         </dl>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <RecyclePanel preview={preview.data as RecyclePreview} />
-        <GradedList cards={graded.data as GradedCard[]} />
-      </div>
+      <RecyclePanel preview={preview.data as RecyclePreview} />
 
       <nav className="flex gap-2" aria-label={t("views")}>
         {(["cards", "albums"] as const).map((v) => (
@@ -260,6 +272,20 @@ export default async function CollectionPage({
                 ))}
               </select>
             </label>
+            <label className="flex flex-col gap-1 text-sm">
+              {t("sortLabel")}
+              <select
+                name="sort"
+                defaultValue={sort}
+                className="rounded-lg border border-cream/30 bg-night px-3 py-1.5"
+              >
+                {SORTS.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`sort.${s}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
             {country && <input type="hidden" name="country" value={country} />}
             {set && <input type="hidden" name="set" value={set} />}
             <button
@@ -292,17 +318,11 @@ export default async function CollectionPage({
           {data.cards.length === 0 ? (
             <p className="text-cream/70">{t(`empty.${filter}`)}</p>
           ) : (
-            <ul className="card-grid grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-              {data.cards.map((card) => (
-                <CollectionCard
-                  key={card.player_id}
-                  card={card}
-                  catalogSize={catalogSize}
-                  showcase={showcase}
-                  aces={aces}
-                />
-              ))}
-            </ul>
+            <CollectionGrid
+              cards={data.cards}
+              catalogSize={catalogSize}
+              showcase={showcase}
+            />
           )}
 
           {pages > 1 && (

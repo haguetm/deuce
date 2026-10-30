@@ -98,6 +98,35 @@ export interface CardFrontData {
   image: CardImage | null;
 }
 
+/** Card back (get_card_back): details, statistics and texts for an owner only. */
+export interface CardBackData {
+  player_id: number;
+  slug: string;
+  name: string;
+  country_code: string | null;
+  rarity: Rarity;
+  catalog_number?: number;
+  image: CardImage | null;
+  quantity: number;
+  sex?: "male" | "female";
+  birth_date?: string | null;
+  hand?: "right" | "left" | null;
+  height_cm?: number | null;
+  career_start_year?: number | null;
+  career_end_year?: number | null;
+  preferred_surface?: "hard" | "clay" | "grass" | "carpet" | null;
+  stats?: Record<string, number | string>;
+  stats_source?: {
+    name: string;
+    url: string;
+    license: string;
+    license_url: string;
+  } | null;
+  texts?: Partial<
+    Record<"fr" | "en", { extract: string; article_url: string; license: string }>
+  >;
+}
+
 export function imageUrl(image: CardImage | null): string | null {
   if (!image) return null;
   const base = process.env.NEXT_PUBLIC_IMAGE_BASE_URL ?? "";

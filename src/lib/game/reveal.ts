@@ -110,13 +110,17 @@ export function refilled(
   };
 }
 
-/** Cards in reveal order: slot order, so the guaranteed slot comes last. */
+const ORDER = RARITIES;
+
+/** Cards in reveal order: rarest last, slot order among equals. */
 export function revealOrder(cards: DrawnCard[]): DrawnCard[] {
-  return [...cards].sort((a, b) => a.slot - b.slot);
+  return [...cards].sort(
+    (a, b) =>
+      ORDER.indexOf(a.rarity) - ORDER.indexOf(b.rarity) || a.slot - b.slot,
+  );
 }
 
 /** Highest rarity first: used to pick the "best pull" for the summary. */
-const ORDER = RARITIES;
 export function bestCard(cards: DrawnCard[]): DrawnCard | undefined {
   return [...cards].sort(
     (a, b) => ORDER.indexOf(b.rarity) - ORDER.indexOf(a.rarity),

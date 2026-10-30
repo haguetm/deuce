@@ -179,7 +179,10 @@ def _import_player(cur, client, store, player, stats_entry, start, end, args, jo
               player.career_end_year or (stats_entry.last_year if stats_entry else None))
     image, raw = _choose_photo(client, player, career, journal)
     if image is None:
+        # A card without a photo has no interest: out of the catalogue until one exists.
+        db.set_photo_missing(cur, player_id, True)
         return
+    db.set_photo_missing(cur, player_id, False)
     body, width, height = images.to_card_webp(raw)
     key = storage.object_key(player.qid, body)
     store.put(key, body, "image/webp")
@@ -212,10 +215,27 @@ def _choose_photo(client, player, career, journal):
             journal.count("photos.era")
             return best[1], best[2]
     if primary is None:
-        if not player.commons_file:
-            journal.issue("no_photo", player.qid, "no image (P18) on Wikidata, silhouette shown")
+        found = _lead_image(client, player)
+        if found is not None:
+            journal.count("photos.wikipedia")
+            return found
+        journal.issue("no_photo", player.qid, "no free photo found, out of the catalogue")
         return None, None
     return primary, client.get_bytes(primary.thumb_url)
+
+
+def _lead_image(client, player):
+    """First free lead image of the player's Wikipedia articles showing one face."""
+    for name in wikipedia.lead_images(client, wikipedia.fetch_sitelinks(client, player.qid)):
+        if name == player.commons_file:
+            continue  # already rejected above
+        image, _ = commons.fetch_image(client, name)
+        if image is None:
+            continue
+        raw = client.get_bytes(image.thumb_url)
+        if images.portrait_score(raw) > 0:
+            return image, raw
+    return None
 
 
 def _score(cur, journal: Journal) -> None:

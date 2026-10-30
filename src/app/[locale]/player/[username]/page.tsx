@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CardFront } from "@/components/card/card-front";
+import { PhotoCredits } from "@/components/card/photo-credits";
 import type { CardFrontData } from "@/lib/game/types";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 
@@ -87,6 +88,7 @@ export default async function PlayerPage({
           ))}
         </ul>
       )}
+      <PhotoCredits cards={profile.showcase} />
     </section>
   );
 }

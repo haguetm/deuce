@@ -10,30 +10,28 @@ import {
   recycleAction,
   setShowcaseAction,
   setWishlistAction,
-  submitGradingAction,
 } from "@/app/[locale]/collection/actions";
 
 export interface CollectionCardData extends CardFrontData {
   quantity: number;
   wished: boolean;
-  graded: number;
 }
 
 /**
- * One card of the collection grid with its actions: wish a missing card;
- * for owned cards, showcase it, send a copy to grading, recycle the
- * duplicates of a high rarity (bulk recycling skips those).
+ * One card of the collection grid with its actions: a click opens it up
+ * close (CardViewer); wish a missing card; for owned cards, showcase it,
+ * recycle the duplicates of a high rarity (bulk recycling skips those).
  */
 export function CollectionCard({
   card,
   catalogSize,
   showcase,
-  aces,
+  onOpen,
 }: {
   card: CollectionCardData;
   catalogSize: number;
   showcase: number[];
-  aces: number;
+  onOpen: () => void;
 }) {
   const t = useTranslations("collection");
   const router = useRouter();
@@ -41,8 +39,6 @@ export function CollectionCard({
   const [error, setError] = useState<string | null>(null);
   const owned = card.quantity > 0;
   const inShowcase = showcase.includes(card.player_id);
-  const fee = gameConfig.grading.fees[card.rarity];
-  const ungraded = card.quantity - card.graded;
   const highRarity =
     gameConfig.recycleValues[card.rarity] >
     gameConfig.recycleValues[gameConfig.recycle.bulkMaxRarity];
@@ -58,24 +54,28 @@ export function CollectionCard({
   return (
     <li className="flex flex-col gap-1.5">
       <div className="relative">
-        <CardFront
-          compact
-          missing={!owned}
-          name={card.name}
-          countryCode={card.country_code}
-          rarity={card.rarity}
-          image={card.image}
-          catalogNumber={card.catalog_number}
-          catalogSize={catalogSize}
-          badge={
-            card.quantity > 1
-              ? t("copies", { count: card.quantity })
-              : undefined
-          }
-          highlight={
-            card.graded > 0 ? t("graded", { count: card.graded }) : undefined
-          }
-        />
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={t("open", { name: card.name })}
+          className="collection-card-open block w-full rounded-[0.9rem] text-left"
+        >
+          <CardFront
+            compact
+            missing={!owned}
+            name={card.name}
+            countryCode={card.country_code}
+            rarity={card.rarity}
+            image={card.image}
+            catalogNumber={card.catalog_number}
+            catalogSize={catalogSize}
+            badge={
+              card.quantity > 1
+                ? t("copies", { count: card.quantity })
+                : undefined
+            }
+          />
+        </button>
         {!owned && (
           <button
             type="button"
@@ -113,20 +113,7 @@ export function CollectionCard({
           >
             {inShowcase ? t("inShowcase") : t("toShowcase")}
           </button>
-          <button
-            type="button"
-            disabled={pending || ungraded < 1 || aces < fee}
-            onClick={() => {
-              if (window.confirm(t("gradeConfirm", { name: card.name, fee })))
-                run(() =>
-                  submitGradingAction(card.player_id, crypto.randomUUID()),
-                );
-            }}
-            className="rounded-full border border-cream/30 px-2 py-0.5 text-cream/80 disabled:opacity-40"
-          >
-            {t("grade", { fee })}
-          </button>
-          {highRarity && card.quantity - Math.max(1, card.graded) > 0 && (
+          {highRarity && card.quantity > 1 && (
             <button
               type="button"
               disabled={pending}

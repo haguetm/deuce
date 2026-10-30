@@ -101,9 +101,9 @@ describe("reveal state machine", () => {
     expect(revealReducer(opening1, { type: "open" })).toBe(opening1);
   });
 
-  it("reveals in slot order, guaranteed slot last, and finds the best pull", () => {
+  it("reveals the rarest cards last, and finds the best pull", () => {
     expect(revealOrder(opening.cards).map((c) => c.slot)).toEqual([
-      1, 2, 3, 4, 5,
+      2, 3, 4, 1, 5,
     ]);
     expect(bestCard(opening.cards)?.rarity).toBe("epic");
     expect(isHighRarity("epic")).toBe(true);

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { RARITIES } from "@config/game";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { CardBackData } from "@/lib/game/types";
 
 /**
  * Collection mutations. Each one is a thin wrapper over a SECURITY DEFINER
@@ -62,15 +63,11 @@ export async function recycleAction(
   );
 }
 
-export async function submitGradingAction(id: number, request: string) {
-  const parsed = z
-    .object({ id: playerId, request: requestId })
-    .safeParse({ id, request });
+/** Card back, read when a card is opened (details only for an owner). */
+export async function getCardBackAction(id: number) {
+  const parsed = playerId.safeParse(id);
   if (!parsed.success) return { ok: false, error: "unknown" } as const;
-  return rpc<{ id: string; ready_at: string }>("submit_grading", {
-    p_player_id: parsed.data.id,
-    p_request_id: parsed.data.request,
-  });
+  return rpc<CardBackData>("get_card_back", { p_player_id: parsed.data });
 }
 
 export async function setShowcaseAction(ids: number[]) {

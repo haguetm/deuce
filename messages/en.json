@@ -110,10 +110,8 @@
   },
   "card": {
     "silhouette": "Photo unavailable",
-    "photoCredit": "Photo: {author}, {license}",
     "flag": "Flag: {country}",
-    "number": "#{number}/{total}",
-    "photoCreditShort": "Photo credit"
+    "number": "#{number}/{total}"
   },
   "history": {
     "title": "Opening history",
@@ -244,13 +242,10 @@
     "next": "Next",
     "page": "Page {page} of {pages}",
     "copies": "×{count}",
-    "graded": "{count, plural, one {Graded} other {# graded}}",
     "wish": "Add to my wishlist",
     "unwish": "Remove from my wishlist",
     "inShowcase": "In showcase",
     "toShowcase": "Showcase",
-    "gradeConfirm": "Send a copy of {name} to grading for {fee} aces? The grade is final.",
-    "grade": "Grade · {fee}",
     "recycleOneConfirm": "Recycle the duplicates of {name}? One copy is always kept.",
     "recycleOne": "Recycle",
     "recycleTitle": "Recycle duplicates",
@@ -263,12 +258,21 @@
       "already_owned": "You already own this card.",
       "wishlist_full": "Your wishlist is full (50 cards).",
       "insufficient_balance": "Not enough aces.",
-      "no_ungraded_copy": "All your copies are already graded.",
-      "grading_queue_full": "At most 3 gradings at once.",
       "not_owned": "You do not own this card.",
       "invalid_showcase": "At most 5 cards in the showcase.",
       "nothing_to_recycle": "Nothing to recycle.",
       "link_account_required": "Link your account to use this."
+    },
+    "open": "View {name} up close",
+    "sortLabel": "Sort by",
+    "sort": {
+      "rarity": "Rarity",
+      "recent": "Recently obtained",
+      "number": "Number",
+      "name": "Name",
+      "youngest": "Youngest",
+      "oldest": "Oldest",
+      "country": "Country"
     }
   },
   "collections": {
@@ -276,19 +280,6 @@
     "rolandGarrosChampions": "Roland-Garros champions",
     "worldNumberOnes": "World No. 1s",
     "grandSlamChampions": "Grand Slam champions"
-  },
-  "grading": {
-    "title": "Grading",
-    "empty": "No card in grading. Pick a copy in your collection: it comes back with a final grade.",
-    "pending": "ready on {date}",
-    "result": "{grade}/10 {label} · no. {certificate}",
-    "labels": {
-      "6": "Good",
-      "7": "Very good",
-      "8": "Excellent",
-      "9": "Near mint",
-      "10": "Mint"
-    }
   },
   "missions": {
     "title": "Missions",
@@ -518,6 +509,18 @@
     "title": "What's new",
     "subtitle": "What changes in the game, newest first.",
     "entries": {
+      "2026-10-29": {
+        "title": "Brand new cards and tube",
+        "items": {
+          "cards": "Redesigned cards: metal frame, aura and holo sheen growing with the rarity.",
+          "back": "Click a card to see it up close, tilt it and flip it: statistics, career, biography and credits are on the back.",
+          "sort": "Collection sortable by rarity, date obtained, number, name, age or country.",
+          "reveal": "The rarest cards come out last, with a burst of light in their color.",
+          "tube": "New ball tube: clear plastic, felt balls, glossy label.",
+          "catalog": "Only players with a photo, and many more tour players.",
+          "grading": "Grading removed for now."
+        }
+      },
       "2026-10-26": {
         "title": "Golden boosters, missions and collection",
         "items": {
@@ -534,6 +537,61 @@
           "trial": "Trial without an account: two boosters before signing up."
         }
       }
+    }
+  },
+  "viewer": {
+    "label": "{name}'s card",
+    "close": "Close",
+    "previous": "Previous card",
+    "next": "Next card",
+    "showBack": "Flip the card",
+    "showFront": "Show the front",
+    "hint": "← → to change cards · F to flip · Esc to close"
+  },
+  "cardBack": {
+    "loading": "Loading…",
+    "locked": "Get this card to discover its back: statistics, career and biography.",
+    "born": "Born",
+    "age": "{age} years old",
+    "plays": "Plays",
+    "hand": {
+      "right": "Right-handed",
+      "left": "Left-handed"
+    },
+    "height": "Height",
+    "career": "Career",
+    "since": "Since {year}",
+    "surface": "Favourite surface",
+    "surfaces": {
+      "hard": "Hard",
+      "clay": "Clay",
+      "grass": "Grass",
+      "carpet": "Carpet"
+    },
+    "bestRank": "Best ranking",
+    "titles": "Titles",
+    "slams": "Grand Slams",
+    "record": "Win–loss",
+    "slamFinals": "Slam finals",
+    "weeksNo1": "Weeks at No. 1",
+    "slam": {
+      "australian_open_titles": "{count} × Australian Open",
+      "roland_garros_titles": "{count} × Roland-Garros",
+      "wimbledon_titles": "{count} × Wimbledon",
+      "us_open_titles": "{count} × US Open"
+    },
+    "readMore": "Read on Wikipedia",
+    "photoCredit": "Photo: {author}, {license}",
+    "statsCredit": "Statistics: {source}, {license}",
+    "textCredit": "Text: Wikipedia, {license}"
+  },
+  "grading": {
+    "labels": {
+      "6": "Good",
+      "7": "Very good",
+      "8": "Excellent",
+      "9": "Near mint",
+      "10": "Mint"
     }
   }
 }

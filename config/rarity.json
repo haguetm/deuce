@@ -1,5 +1,5 @@
 {
-  "$comment": "Rarity scoring parameters, read by the data pipeline (pipeline/deuce_pipeline/scoring.py). Tuned on the 1,830-player catalogue of 2026-10-28, checked on the 5,056-player one of 2026-10-29 (docs/DECISIONS.md).",
+  "$comment": "Rarity scoring parameters, read by the data pipeline (pipeline/deuce_pipeline/scoring.py). Tuned on the 1,830-player catalogue of 2026-10-28, checked on the 3,488-player photo-only one of 2026-10-30 (docs/DECISIONS.md).",
   "weights": {
     "achievements": 0.5,
     "notoriety": 0.5

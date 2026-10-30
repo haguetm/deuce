@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CardFront } from "@/components/card/card-front";
+import { PhotoCredits } from "@/components/card/photo-credits";
 import { ProfileSettings } from "@/components/profile/profile-settings";
 import { PushPanel } from "@/components/profile/push-panel";
 import { SignOutButton } from "@/components/layout/sign-out-button";
@@ -113,6 +114,7 @@ export default async function ProfilePage({
             ))}
           </ul>
         )}
+        <PhotoCredits cards={me.showcase} />
         <Link
           href="/collection"
           className="self-start text-sm text-ball underline"

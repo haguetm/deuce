@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { RARITIES, type Rarity } from "@config/game";
 import { useTranslations } from "next-intl";
 import { CardFront } from "@/components/card/card-front";
 import { glowTier, isUpperOfPair, stackLayout } from "@/lib/game/glow";
@@ -14,8 +15,10 @@ const STEP = 8;
  * and fully visible; only the edges of the next ones show, each with the
  * halo of its pair of rarities (gameConfig.glowTiers), which never changes.
  * The exact rarity appears on the frame once a card is on top, with a shine
- * when it is the better rarity of its pair. A click (or Space, Enter, right
- * arrow) slides the top card up and away.
+ * when it is the better rarity of its pair. A rare card or better lands with
+ * a burst of light in its color, bigger with the rarity (PullBurst). A click
+ * (or Space, Enter, right arrow) slides the top card up and away. The
+ * rarest cards come last (revealOrder).
  */
 export function RevealStack({
   cards,
@@ -81,6 +84,7 @@ export function RevealStack({
           marginBottom: `${(Math.min(cards.length, 6) - 1) * STEP}px`,
         }}
       >
+        {top && <PullBurst key={top.slot} rarity={top.rarity} />}
         {/* Sizing ghost: the stack takes the height of one card. */}
         <span className="block aspect-[5/7] w-full" aria-hidden="true" />
         {shown
@@ -94,7 +98,7 @@ export function RevealStack({
             return (
               <div
                 key={card.slot}
-                className={`stack-card glow-${glowTier(card.rarity)} absolute inset-0 rounded-xl ${gone ? "stack-gone" : ""}`}
+                className={`stack-card glow-${glowTier(card.rarity)} absolute inset-0 rounded-[0.9rem] ${gone ? "stack-gone" : ""} ${isTop ? `stack-top pull-${pullLevel(card.rarity)}` : ""}`}
                 style={{
                   zIndex: 100 - depth,
                   transform: gone
@@ -162,5 +166,43 @@ export function RevealStack({
         {t("keyboardHint")}
       </p>
     </section>
+  );
+}
+
+/** 0 = no effect (two lowest rarities), then 1 (rare) to 4 (top rarity). */
+export function pullLevel(rarity: Rarity): number {
+  return Math.max(0, RARITIES.indexOf(rarity) - 1);
+}
+
+/**
+ * Light behind the card that just landed: turning rays and a flash in the
+ * rarity color, sparks from epic up, a full-screen flash from legendary up.
+ * Decorative only (aria-hidden); the rarity is announced in the text below.
+ */
+function PullBurst({ rarity }: { rarity: Rarity }) {
+  const level = pullLevel(rarity);
+  if (level === 0) return null;
+  const sparks = level >= 2 ? 10 + level * 4 : 0;
+  return (
+    <div
+      className={`pull-burst pull-burst-${level}`}
+      style={{ ["--card-rarity" as string]: `var(--rarity-${rarity})` }}
+      aria-hidden="true"
+    >
+      <span className="pull-rays" />
+      <span className="pull-flash" />
+      {Array.from({ length: sparks }, (_, i) => (
+        <span
+          key={i}
+          className="pull-spark"
+          style={{
+            ["--a" as string]: `${(360 / sparks) * i + (i % 3) * 7}deg`,
+            ["--d" as string]: `${140 + ((i * 37) % 90) + level * 25}px`,
+            animationDelay: `${(i % 4) * 40}ms`,
+          }}
+        />
+      ))}
+      {level >= 3 && <span className="pull-screen" />}
+    </div>
   );
 }
