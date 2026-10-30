@@ -3,7 +3,10 @@
 Every upsert is keyed on a natural key (wikidata_id, (player_id, key),
 (player_id, lang), (player_id, commons_file)), so running the pipeline twice
 yields the same database. Manual corrections are never overwritten:
-rarity_override, in_catalog and image `hidden` flags are left untouched.
+rarity_override, in_catalog and image `hidden` flags are left untouched,
+except that a person who turns out not to be a tour player is taken out of
+the catalogue (in_catalog is never set back to true), and a player without a
+free photo is out until one is found (photo_missing).
 """
 from __future__ import annotations
 
@@ -36,21 +39,39 @@ def upsert_player(cur: psycopg.Cursor, p: WikidataPlayer, pageviews: int,
         """
         insert into public.players (wikidata_id, slug, name, sex, birth_date, country_code, hand,
           height_cm, career_start_year, career_end_year, preferred_surface,
-          frwiki_title, enwiki_title, pageviews_12m, updated_at)
-        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+          frwiki_title, enwiki_title, pageviews_12m, sitelinks, hall_of_fame, updated_at)
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
         on conflict (wikidata_id) do update set
           name = excluded.name, sex = excluded.sex, birth_date = excluded.birth_date,
           country_code = excluded.country_code, hand = excluded.hand, height_cm = excluded.height_cm,
           career_start_year = excluded.career_start_year, career_end_year = excluded.career_end_year,
           preferred_surface = excluded.preferred_surface, frwiki_title = excluded.frwiki_title,
           enwiki_title = excluded.enwiki_title, pageviews_12m = excluded.pageviews_12m,
+          sitelinks = excluded.sitelinks, hall_of_fame = excluded.hall_of_fame,
           updated_at = now()
         returning id
         """,
         (p.qid, slug, p.name, p.sex, p.birth_date, p.country_code, p.hand, p.height_cm,
-         start, end, preferred_surface, p.frwiki_title, p.enwiki_title, pageviews),
+         start, end, preferred_surface, p.frwiki_title, p.enwiki_title, pageviews,
+         p.sitelinks, p.hall_of_fame),
     )
     return cur.fetchone()[0]
+
+
+def exclude_player(cur: psycopg.Cursor, qid: str) -> None:
+    """Out of the catalogue: not a tour player (only ever sets in_catalog to false)."""
+    cur.execute("update public.players set in_catalog = false where wikidata_id = %s and in_catalog", (qid,))
+
+
+def set_photo_missing(cur: psycopg.Cursor, player_id: int, missing: bool) -> None:
+    """A player without a free photo leaves the catalogue and comes back once
+    one is found. Other exclusions (manual, not a tour player) are kept."""
+    if missing:
+        cur.execute("update public.players set in_catalog = false, photo_missing = true "
+                    "where id = %s and in_catalog", (player_id,))
+    else:
+        cur.execute("update public.players set in_catalog = true, photo_missing = false "
+                    "where id = %s and photo_missing", (player_id,))
 
 
 def upsert_stats(cur: psycopg.Cursor, player_id: int, stats: dict[str, float],
@@ -104,11 +125,25 @@ def upsert_primary_image(cur: psycopg.Cursor, player_id: int, image: CommonsImag
     )
 
 
+def load_primary_images(cur: psycopg.Cursor) -> list[tuple]:
+    """(player id, Wikidata id, Commons file, name, career start, career end)
+    of every catalogue photo, and of players out for want of a usable one."""
+    cur.execute(
+        """
+        select p.id, p.wikidata_id, i.commons_file, p.name, p.career_start_year, p.career_end_year
+        from public.players p join public.player_images i on i.player_id = p.id and i.is_primary
+        where p.in_catalog or p.photo_missing order by p.id
+        """
+    )
+    return cur.fetchall()
+
+
 def load_score_inputs(cur: psycopg.Cursor):
     cur.execute(
         """
         select p.wikidata_id, coalesce(p.pageviews_12m, 0),
-               coalesce(jsonb_object_agg(s.key, s.value_num) filter (where s.key is not null), '{}')
+               coalesce(jsonb_object_agg(s.key, s.value_num) filter (where s.key is not null), '{}'),
+               coalesce(p.sitelinks, 0), p.hall_of_fame, p.career_start_year
         from public.players p
         left join public.player_stats s on s.player_id = p.id
         where p.in_catalog

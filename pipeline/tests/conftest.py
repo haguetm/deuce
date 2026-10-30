@@ -41,7 +41,7 @@ def database_url():
     psql = ["psql", "-h", str(work), "-p", port, "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-q"]
     try:
         files = [ROOT / "scripts/db/supabase-shim.sql", *sorted((ROOT / "supabase/migrations").glob("*.sql")),
-                 ROOT / "supabase/seed.sql"]
+                 ROOT / "supabase/seed.sql", ROOT / "supabase/seed-game-config.sql"]
         for f in files:
             subprocess.run([*psql, "-f", str(f)], check=True, capture_output=True)
         yield f"host={work} port={port} user=postgres dbname=postgres"

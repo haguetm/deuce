@@ -16,14 +16,36 @@ Variables d'environnement (voir `.env.example` à la racine) :
 |---|---|
 | `PIPELINE_CONTACT` | email ou URL de contact, obligatoire dans le User-Agent (politique Wikimedia) |
 | `DATABASE_URL` | connexion Postgres directe (local : `postgresql://postgres:postgres@127.0.0.1:54322/postgres`) |
+| `PIPELINE_MIN_INTERVAL_S` | délai minimal entre deux requêtes vers un même hôte, en secondes (défaut 1) |
 | `IMAGE_STORAGE_PROVIDER` | `local` (développement), `r2` (production) ou `supabase` |
 
 Données Sackmann (jamais versionnées, licence CC BY-NC-SA 4.0) :
 
 ```bash
-git clone --depth 1 https://github.com/JeffSackmann/tennis_atp pipeline/data/tennis_atp
-git clone --depth 1 https://github.com/JeffSackmann/tennis_wta pipeline/data/tennis_wta
+.venv/bin/deuce-pipeline fetch-sackmann   # archive Hugging Face, voir docs/DATA.md
 ```
+
+## Import réel depuis une machine personnelle
+
+Wikimedia filtre les requêtes venant des adresses IP cloud partagées : lancer l'import depuis ta machine. Les scripts lisent `DATABASE_URL` depuis `supabase status` (Supabase local démarré avec `pnpm db:start`), clonent ou mettent à jour les données Sackmann ATP et WTA, installent l'environnement Python puis lancent l'import. La fin du run affiche un résumé des compteurs et écrit `pipeline/logs/<date>-import-issues.json`.
+
+bash (Linux, macOS, WSL, Git Bash) :
+
+```bash
+pnpm db:start
+export PIPELINE_CONTACT="ton-email-ou-url"
+pipeline/run-import.sh              # 200 joueurs ; LIMIT=500 pipeline/run-import.sh pour plus
+```
+
+PowerShell (Windows) :
+
+```powershell
+pnpm db:start
+$env:PIPELINE_CONTACT = "ton-email-ou-url"
+.\pipeline\run-import.ps1            # 200 joueurs ; -Limit 500 pour plus
+```
+
+Si `supabase status` n'est pas disponible, définir `DATABASE_URL` à la main (valeur par défaut locale : `postgresql://postgres:postgres@127.0.0.1:54322/postgres`).
 
 ## Commandes
 
@@ -43,7 +65,7 @@ Options d'`import` : `--skip-images`, `--skip-texts`, `--sackmann-dir`.
 3. Statistiques Sackmann reliées par la colonne `wikidata_id` : meilleur classement, semaines n°1, titres, titres et finales du Grand Chelem, victoires et défaites, surface de prédilection.
 4. Pages vues Wikipédia FR + EN sur les 12 derniers mois complets.
 5. Extraits Wikipédia FR et EN avec URL et numéro de révision (attribution CC BY-SA).
-6. Photo Commons : licence filtrée (CC BY, CC BY-SA, CC0, domaine public ; NC et ND rejetées), auteur et licence stockés, redimensionnement à 400 px en WebP sans métadonnées EXIF, envoi vers le stockage.
+6. Photo Commons : licence filtrée (CC BY, CC BY-SA, CC0, domaine public ; NC et ND rejetées), auteur et licence stockés. Pour un joueur retraité, photo de ses années de jeu prise dans sa catégorie Commons quand celle de Wikidata est plus récente (voir `docs/DATA.md`). Une photo sans visage visible est remplacée par une autre du joueur, sinon le joueur sort du catalogue. Recadrage centré sur le visage (YuNet, `models/`), source plus grande téléchargée si le cadre a moins de 400 px, 400 px de large en WebP sans métadonnées EXIF, envoi vers le stockage. `deuce-pipeline recrop` refait ce recadrage pour tout le catalogue.
 7. Score de rareté et tiers selon `config/rarity.json`.
 
 Les corrections manuelles survivent à un nouvel import : `rarity_override`, `in_catalog` et le masquage des photos ne sont jamais écrasés.

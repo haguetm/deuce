@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { brand } from "@config/brand";
@@ -8,6 +9,8 @@ import { routing } from "@/i18n/routing";
 import { brandCssVariables } from "@/lib/brand-css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
+import { ReferralCapture } from "@/components/layout/referral-capture";
 import "../globals.css";
 
 const inter = Inter({ variable: "--font-sans-family", subsets: ["latin"] });
@@ -48,7 +51,7 @@ export default async function LocaleLayout({
       style={brandCssVariables()}
       className={`${inter.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col font-sans">
+      <body className="flex min-h-full flex-col pb-20 font-sans md:pb-0">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:rounded focus:bg-ball focus:px-3 focus:py-2 focus:text-night"
@@ -61,6 +64,10 @@ export default async function LocaleLayout({
             {children}
           </main>
           <SiteFooter />
+          <MobileTabBar />
+          <Suspense fallback={null}>
+            <ReferralCapture />
+          </Suspense>
         </NextIntlClientProvider>
       </body>
     </html>

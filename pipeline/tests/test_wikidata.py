@@ -14,6 +14,9 @@ ROW = {
     "image": {"value": "http://commons.wikimedia.org/wiki/Special:FilePath/Zo%C3%A9%20Test%202019.jpg"},
     "career_start": {"value": "2008-01-01T00:00:00Z"},
     "frwiki": {"value": "Zoé Testeuse"},
+    "commons_category": {"value": "Zoé Testeuse"},
+    "sitelinks": {"value": "42"},
+    "hall_of_fame": {"value": "1"},
 }
 
 
@@ -29,6 +32,9 @@ def test_parse_player_maps_fields():
     assert p.commons_file == "File:Zoé Test 2019.jpg"
     assert p.career_start_year == 2008
     assert p.enwiki_title is None
+    assert p.commons_category == "Zoé Testeuse"
+    assert p.sitelinks == 42 and p.hall_of_fame
+    assert not wikidata.parse_player({**ROW, "hall_of_fame": {"value": "0"}}).hall_of_fame
 
 
 def test_parse_player_reports_issues_instead_of_guessing():
@@ -37,6 +43,12 @@ def test_parse_player_reports_issues_instead_of_guessing():
     assert p.sex is None and p.country_code is None and p.height_cm is None
     assert any("label" in i for i in p.issues)
     assert any("height" in i for i in p.issues)
+
+
+def test_multilingual_label_is_the_last_resort():
+    row = {"p": ROW["p"], "label_mul": {"value": "Zoé Testeuse"}}
+    assert wikidata.parse_player(row).name == "Zoé Testeuse"
+    assert wikidata.parse_player({**row, "label_fr": {"value": "Zoé T."}}).name == "Zoé T."
 
 
 def test_full_date_is_parsed():
@@ -49,10 +61,23 @@ def test_slugify():
     assert wikidata.slugify("  O'Neil  ") == "o-neil"
 
 
-def test_details_query_rejects_invalid_ids():
-    query = wikidata.details_query(["Q1", "Q2", "DROP TABLE", "Q3}"])
-    assert "wd:Q1 wd:Q2" in query
-    assert "DROP" not in query and "Q3}" not in query
+def test_details_queries_reject_invalid_ids():
+    for query in wikidata.details_queries(["Q1", "Q2", "DROP TABLE", "Q3}"]):
+        assert "wd:Q1 wd:Q2" in query
+        assert "DROP" not in query and "Q3}" not in query
+        assert query.count("OPTIONAL") <= 3  # small queries only
+
+
+def test_detail_groups_merge_into_one_row_per_player():
+    p1 = {"p": {"value": "http://www.wikidata.org/entity/Q1"}}
+    p2 = {"p": {"value": "http://www.wikidata.org/entity/Q2"}}
+    rows = wikidata.merge_rows([
+        [{**p1, "label_en": {"value": "One"}}, {**p2, "label_en": {"value": "Two"}}],
+        [{**p1, "sex": {"value": "http://www.wikidata.org/entity/Q6581097"}}],
+    ])
+    assert len(rows) == 2
+    player = wikidata.parse_player(rows[0])
+    assert (player.qid, player.name, player.sex) == ("Q1", "One", "male")
 
 
 def test_count_query_filters_on_fr_or_en_article():

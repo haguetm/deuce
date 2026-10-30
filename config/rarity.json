@@ -1,10 +1,12 @@
 {
-  "$comment": "Rarity scoring parameters, read by the data pipeline (pipeline/deuce_pipeline/scoring.py). Provisional values, tune after the first full import.",
+  "$comment": "Rarity scoring parameters, read by the data pipeline (pipeline/deuce_pipeline/scoring.py). Tuned on the 1,830-player catalogue of 2026-10-28, checked on the 3,488-player photo-only one of 2026-10-30 (docs/DECISIONS.md).",
   "weights": {
-    "achievements": 0.65,
-    "notoriety": 0.35
+    "achievements": 0.5,
+    "notoriety": 0.5
   },
   "achievements": {
+    "hall_of_fame": 50,
+    "hall_of_fame_before_rankings": 150,
     "grand_slam_titles": 10,
     "grand_slam_finals": 3,
     "weeks_at_no1": 0.15,
@@ -20,15 +22,17 @@
     "titles": 0.4
   },
   "notoriety": {
+    "pageviews_weight": 0.5,
+    "sitelinks_weight": 0.5,
     "pageviews_projects": ["en.wikipedia", "fr.wikipedia"],
     "months": 12,
     "transform": "log10"
   },
   "tiers_by_percentile": {
-    "mythic": 0.5,
-    "legendary": 2,
-    "epic": 7,
-    "rare": 15,
+    "mythic": 1,
+    "legendary": 5,
+    "epic": 10,
+    "rare": 20,
     "uncommon": 25
   }
 }

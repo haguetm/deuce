@@ -10,9 +10,10 @@ def test_percentiles_ties_share_value():
 
 def test_tier_sizes_follow_config():
     sizes = scoring.tier_sizes(4000, CFG)
-    assert sizes == {"mythic": 20, "legendary": 80, "epic": 280, "rare": 600, "uncommon": 1000, "common": 2020}
+    assert sizes == {"mythic": 40, "legendary": 200, "epic": 400, "rare": 800, "uncommon": 1000, "common": 1560}
     assert sum(scoring.tier_sizes(200, CFG).values()) == 200
-    assert scoring.tier_sizes(200, CFG)["mythic"] == 1
+    assert scoring.tier_sizes(200, CFG)["mythic"] == round(200 * CFG["tiers_by_percentile"]["mythic"] / 100)
+    assert scoring.tier_sizes(20, CFG)["mythic"] == 1  # every tier keeps a card in a tiny catalogue
 
 
 def test_best_rank_buckets():
@@ -30,6 +31,26 @@ def test_champion_ranks_above_unknown_player_and_is_deterministic():
     assert first["Q9999"][1] == "mythic"
     assert first == scoring.score_catalogue(list(reversed(players)), CFG)
     assert all(0 <= s <= 100 for s, _ in first.values())
+
+
+def test_hall_of_fame_counts_as_achievement():
+    a = CFG["achievements"]
+    ranked = {"best_rank": 150}
+    assert scoring.achievements_raw(ranked, CFG, hall_of_fame=True) == a["hall_of_fame"] + a["best_rank_points"]["101-200"]
+    # Retired before computer rankings: the statistics miss the career.
+    assert scoring.achievements_raw({}, CFG, hall_of_fame=True) == a["hall_of_fame_before_rankings"]
+    # Started before the Open era: titles before 1968 are missing too.
+    assert scoring.achievements_raw(ranked, CFG, True, career_start=1958) == (
+        a["hall_of_fame_before_rankings"] + a["best_rank_points"]["101-200"])
+    assert scoring.achievements_raw({}, CFG) == 0
+
+
+def test_lasting_fame_lifts_a_pre_open_era_legend():
+    # Same (empty) stats and views: Wikipedia editions and the Hall of Fame decide.
+    players = [scoring.ScoreInput(f"Q{i}", {}, 10_000, sitelinks=10) for i in range(1, 100)]
+    players.append(scoring.ScoreInput("Q9999", {}, 10_000, sitelinks=60, hall_of_fame=True))
+    result = scoring.score_catalogue(players, CFG)
+    assert max(result, key=lambda q: result[q][0]) == "Q9999"
 
 
 def test_propose_threshold():

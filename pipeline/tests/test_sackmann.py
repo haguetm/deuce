@@ -34,6 +34,17 @@ def test_players_mapping_uses_wikidata_column(tmp_path):
     assert mapping == {"Q999999990": "1001", "Q999999992": "1003"}
 
 
+def test_players_without_wikidata_id_are_found_by_name_and_birth_date(tmp_path):
+    d = _write(tmp_path)
+    with open(d / "atp_players.csv", "a", encoding="utf-8") as f:
+        f.write("1004,Dé,Delta,R,19930101,FRA,,\n1005,Eva,Echo,R,19940101,FRA,,\n1006,Eva,Echo,R,19940101,BEL,,\n")
+    identities = sackmann.read_identities(d, "atp")
+    assert identities[sackmann.identity_key("De Delta", "19930101")] == "1004"
+    assert identities[sackmann.identity_key("Bea Beta", "19910101")] == "1002"
+    assert sackmann.identity_key("Eva Echo", "19940101") not in identities  # two players: ambiguous
+    assert sackmann.identity_key("Ana Alpha", "19900101") not in identities  # matched by Wikidata id
+
+
 def test_career_stats(tmp_path):
     d = _write(tmp_path)
     stats = sackmann.compute_stats(d, "atp", {"1001", "1003"})
@@ -53,3 +64,34 @@ def test_preferred_surface_needs_enough_wins(tmp_path):
     assert stats["1001"].preferred_surface is None
     stats["1001"].wins_by_surface["Clay"] = 25
     assert stats["1001"].preferred_surface == "clay"
+
+
+def test_titles_by_major():
+    assert sackmann.major_of("Roland Garros") == "roland_garros"
+    assert sackmann.major_of(" Wimbledon ") == "wimbledon"
+    assert sackmann.major_of("Australian Chps.") == "australian_open"
+    assert sackmann.major_of("Slam A") is None
+
+
+def test_major_titles_are_stat_rows(tmp_path):
+    d = _write(tmp_path)
+    stats = sackmann.compute_stats(d, "atp", {"1001", "1003"})
+    rows = stats["1001"].as_stat_rows()
+    # "Slam A" is not a known major: counted as a Grand Slam, not per event
+    assert rows["grand_slam_titles"] == 1
+    assert rows["roland_garros_titles"] == 0
+
+
+def test_archive_listing_keeps_tour_files_only():
+    listing = {"siblings": [
+        {"rfilename": "atp/atp_players.csv"},
+        {"rfilename": "wta/wta_matches_2026.csv"},
+        {"rfilename": "atp/UPSTREAM_README.md"},
+        {"rfilename": "slam_pointbypoint/2024-wimbledon-points.csv"},
+        {"rfilename": "LICENSE"},
+    ]}
+    assert sackmann.archive_files(listing) == [
+        ("atp", "atp/atp_players.csv"),
+        ("wta", "wta/wta_matches_2026.csv"),
+        ("atp", "atp/UPSTREAM_README.md"),
+    ]

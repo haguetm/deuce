@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Referral and anti-abuse thresholds and weights.
+ * Referral and anti-abuse thresholds and weights, push dispatch endpoint.
  *
  * The repository is public, so the real values never appear in it: they are
  * read from environment variables and copied into the database
@@ -26,6 +26,10 @@ export const privateSettingsSchema = z.object({
   ABUSE_WEIGHT_SIGNUP_BURST: nonNegativeNumber,
   ABUSE_SIGNUP_BURST_WINDOW_MINUTES: nonNegativeInt,
   ABUSE_SCORE_THRESHOLD: nonNegativeNumber,
+  // Push reminders: pg_cron posts to this URL with this bearer secret (the
+  // same secret is read by the Next.js dispatch route).
+  PUSH_DISPATCH_URL: z.url(),
+  PUSH_DISPATCH_SECRET: z.string().min(16),
 });
 
 export type PrivateSettings = z.infer<typeof privateSettingsSchema>;
@@ -48,4 +52,9 @@ export function toDatabaseEntries(settings: PrivateSettings) {
     key: name.toLowerCase(),
     value,
   }));
+}
+
+/** Bearer secret expected by the push dispatch route (same value as in the database). */
+export function pushDispatchSecret(): string | undefined {
+  return process.env.PUSH_DISPATCH_SECRET || undefined;
 }

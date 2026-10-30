@@ -16,7 +16,11 @@
     "db:test": "supabase test db",
     "db:test:plain": "scripts/db/test-plain-postgres.sh",
     "scan:secrets": "scripts/scan-secrets.sh",
-    "settings:sync": "tsx --env-file=.env.local scripts/sync-private-settings.ts"
+    "settings:sync": "tsx --env-file=.env.local scripts/sync-private-settings.ts",
+    "config:generate": "tsx scripts/generate-game-config-seed.ts",
+    "simulate:economy": "tsx scripts/simulate-economy.ts",
+    "db:seed:dev": "tsx scripts/db/seed-dev.ts",
+    "db:dev:aces": "tsx scripts/db/dev-aces.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -25,15 +29,23 @@
     "next-intl": "^4.14.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "three": "0.186.1",
+    "web-push": "^3.6.7",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "0.186.0",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
+    "pg": "^8.23.1",
+    "playwright": "^1.64.1",
     "prettier": "^3.9.10",
     "supabase": "^2.121.0",
     "tailwindcss": "^4",

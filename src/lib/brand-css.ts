@@ -10,5 +10,14 @@ export function brandCssVariables(): CSSProperties {
   for (const [key, value] of Object.entries(brand.rarityColors)) {
     vars[`--rarity-${key}`] = value;
   }
+  for (const [key, value] of Object.entries(brand.packColors)) {
+    vars[`--pack-${key}`] = value;
+  }
+  for (const [key, value] of Object.entries(brand.glowColors)) {
+    vars[`--glow-${key}`] = value;
+  }
+  for (const [key, value] of Object.entries(brand.tube)) {
+    vars[`--tube-${key}`] = value;
+  }
   return vars as CSSProperties;
 }

@@ -15,6 +15,19 @@ export const routing = defineRouting({
     "/": "/",
     "/takedown": { fr: "/retrait", en: "/takedown" },
     "/odds": { fr: "/probabilites", en: "/odds" },
+    "/login": { fr: "/connexion", en: "/login" },
+    "/boosters": "/boosters",
+    "/history": { fr: "/historique", en: "/history" },
+    "/collection": "/collection",
+    "/missions": "/missions",
+    "/profile": { fr: "/profil", en: "/profile" },
+    "/player/[username]": {
+      fr: "/joueur/[username]",
+      en: "/player/[username]",
+    },
+    "/share/[id]": { fr: "/partage/[id]", en: "/share/[id]" },
+    "/changelog": { fr: "/nouveautes", en: "/changelog" },
+    "/dev/booster": "/dev/booster",
   },
 });
 

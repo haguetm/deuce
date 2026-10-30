@@ -27,7 +27,8 @@ class Journal:
         self.logger = logging.getLogger(f"deuce.{command}.{stamp}")
         self.logger.setLevel(logging.INFO)
         formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-        for handler in (logging.FileHandler(self.log_path), logging.StreamHandler()):
+        # UTF-8 explicitly: Windows defaults to cp1252, which lacks "č" and co.
+        for handler in (logging.FileHandler(self.log_path, encoding="utf-8"), logging.StreamHandler()):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
@@ -42,8 +43,22 @@ class Journal:
         self.counters[f"issue.{kind}"] += 1
 
     def close(self) -> dict:
-        self.issues_path.write_text(json.dumps(self.issues, ensure_ascii=False, indent=2))
+        self.issues_path.write_text(json.dumps(self.issues, ensure_ascii=False, indent=2), encoding="utf-8")
         summary = dict(sorted(self.counters.items()))
         self.info("summary %s", json.dumps(summary))
-        self.info("log: %s | issues: %s", self.log_path, self.issues_path)
+        print(format_summary(summary, self.log_path, self.issues_path, len(self.issues)))
         return summary
+
+
+def format_summary(summary: dict, log_path: Path, issues_path: Path, issue_count: int) -> str:
+    """Human-readable end-of-run block."""
+    width = max((len(k) for k in summary), default=10)
+    lines = ["", "=" * 60, "Run summary", "-" * 60]
+    lines += [f"  {key.ljust(width)}  {value}" for key, value in summary.items()]
+    lines += [
+        "-" * 60,
+        f"  issues: {issue_count} written to {issues_path}",
+        f"  log:    {log_path}",
+        "=" * 60,
+    ]
+    return "\n".join(lines)

@@ -32,3 +32,18 @@ def test_pageviews_window_is_last_complete_months():
 def test_pageviews_total():
     assert pageviews.parse_total({"items": [{"views": 10}, {"views": 5}]}) == 15
     assert pageviews.parse_total({}) == 0
+
+
+def test_parse_sitelinks_keeps_wikipedias_english_and_french_first():
+    entity = {"sitelinks": {
+        "itwiki": {"title": "Beppe Merlo"}, "frwiki": {"title": "Giuseppe Merlo"},
+        "commonswiki": {"title": "Category:Giuseppe Merlo"}, "enwikiquote": {"title": "x"},
+        "zh_min_nanwiki": {"title": "Merlo"}, "enwiki": {"title": "Giuseppe Merlo"},
+    }}
+    assert list(wikipedia.parse_sitelinks(entity)) == ["en", "fr", "it", "zh-min-nan"]
+
+
+def test_parse_lead_image():
+    data = {"query": {"pages": {"1": {"title": "Beppe Merlo", "pageimage": "Beppe_Merlo2.jpg"}}}}
+    assert wikipedia.parse_lead_image(data) == "File:Beppe Merlo2.jpg"
+    assert wikipedia.parse_lead_image({"query": {"pages": {"1": {"title": "x"}}}}) is None

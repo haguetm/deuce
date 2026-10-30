@@ -18,11 +18,15 @@ import httpx
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "http"
 
 
+class GaveUp(RuntimeError):
+    """Still failing after every retry (network down, server overloaded)."""
+
+
 class HttpClient:
     def __init__(
         self,
         cache_dir: Path | None = DEFAULT_CACHE_DIR,
-        min_interval_s: float = 0.2,
+        min_interval_s: float | None = None,
         max_retries: int = 5,
         timeout_s: float = 60.0,
     ) -> None:
@@ -37,7 +41,13 @@ class HttpClient:
             follow_redirects=True,
         )
         self._cache_dir = cache_dir
-        self._min_interval_s = min_interval_s
+        # Polite default: at most one request per second per host, overridable
+        # with PIPELINE_MIN_INTERVAL_S.
+        self._min_interval_s = (
+            min_interval_s
+            if min_interval_s is not None
+            else float(os.environ.get("PIPELINE_MIN_INTERVAL_S", "1.0"))
+        )
         self._max_retries = max_retries
         self._last_call: dict[str, float] = {}
 
@@ -62,7 +72,12 @@ class HttpClient:
 
         for attempt in range(self._max_retries):
             self._throttle(url)
-            response = self._client.get(url, params=params)
+            try:
+                response = self._client.get(url, params=params)
+            except httpx.TransportError:
+                # Connection reset or timeout: transient, retried like a 503.
+                time.sleep(min(2**attempt, 60))
+                continue
             if response.status_code in (429, 500, 502, 503, 504):
                 retry_after = response.headers.get("retry-after")
                 delay = float(retry_after) if retry_after and retry_after.isdigit() else 2**attempt
@@ -73,7 +88,7 @@ class HttpClient:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(response.content)
             return response.content
-        raise RuntimeError(f"giving up after {self._max_retries} attempts: {url}")
+        raise GaveUp(f"giving up after {self._max_retries} attempts: {url}")
 
     def get_json(self, url: str, params: dict[str, Any] | None = None, use_cache: bool = True) -> Any:
         return json.loads(self.get_bytes(url, params, use_cache))

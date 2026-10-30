@@ -1,8 +1,11 @@
 """Rarity score and tiers. Pure functions, parameters from config/rarity.json.
 
-score = w_achievements * percentile(achievements) + w_notoriety * percentile(notoriety)
-Tiers are then assigned by percentile of the score inside the catalogue, so
-the catalogue split (0.5 % mythic, 2 % legendary...) holds whatever its size.
+score = w_achievements * percentile(achievements) + w_notoriety * notoriety
+notoriety = w_pageviews * percentile(pageviews) + w_sitelinks * percentile(sitelinks)
+Achievements add a Hall of Fame bonus, the only record of most titles won
+before 1968. Pageviews measure today's fame, the number of Wikipedia editions
+a lasting one. Tiers are then assigned by percentile of the score inside the
+catalogue, so the catalogue split holds whatever its size.
 """
 from __future__ import annotations
 
@@ -21,6 +24,9 @@ class ScoreInput:
     qid: str
     stats: dict[str, float]
     pageviews: int
+    sitelinks: int = 0
+    hall_of_fame: bool = False
+    career_start: int | None = None
 
 
 def load_config(path: Path = CONFIG_PATH) -> dict:
@@ -37,7 +43,8 @@ def _best_rank_points(best_rank: float | None, table: dict[str, float]) -> float
     return 0.0
 
 
-def achievements_raw(stats: dict[str, float], cfg: dict) -> float:
+def achievements_raw(stats: dict[str, float], cfg: dict, hall_of_fame: bool = False,
+                     career_start: int | None = None) -> float:
     a = cfg["achievements"]
     return (
         a["grand_slam_titles"] * stats.get("grand_slam_titles", 0)
@@ -45,7 +52,22 @@ def achievements_raw(stats: dict[str, float], cfg: dict) -> float:
         + a["weeks_at_no1"] * stats.get("weeks_at_no1", 0)
         + a["titles"] * stats.get("titles", 0)
         + _best_rank_points(stats.get("best_rank"), a["best_rank_points"])
+        + _hall_of_fame_points(stats, a, hall_of_fame, career_start)
     )
+
+
+OPEN_ERA = 1968
+
+
+def _hall_of_fame_points(stats: dict[str, float], a: dict, hall_of_fame: bool,
+                         career_start: int | None) -> float:
+    """Hall of Famers who started before the Open era (1968) or never had a
+    computer ranking: the statistics miss most of their titles, the Hall of
+    Fame stands for them."""
+    if not hall_of_fame:
+        return 0.0
+    before = not stats.get("best_rank") or (career_start is not None and career_start < OPEN_ERA)
+    return float(a["hall_of_fame_before_rankings"] if before else a["hall_of_fame"])
 
 
 def notoriety_raw(pageviews: int) -> float:
@@ -85,8 +107,11 @@ def score_catalogue(players: list[ScoreInput], cfg: dict) -> dict[str, tuple[flo
     if not players:
         return {}
     w = cfg["weights"]
-    ach = percentiles([achievements_raw(p.stats, cfg) for p in players])
-    nor = percentiles([notoriety_raw(p.pageviews) for p in players])
+    n = cfg["notoriety"]
+    ach = percentiles([achievements_raw(p.stats, cfg, p.hall_of_fame, p.career_start) for p in players])
+    views = percentiles([notoriety_raw(p.pageviews) for p in players])
+    links = percentiles([float(p.sitelinks) for p in players])
+    nor = [n["pageviews_weight"] * v + n["sitelinks_weight"] * s for v, s in zip(views, links)]
     scores = {
         p.qid: round(100 * (w["achievements"] * a + w["notoriety"] * b), 4)
         for p, a, b in zip(players, ach, nor)

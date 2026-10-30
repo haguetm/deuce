@@ -1,8 +1,10 @@
 """Career statistics from Jeff Sackmann's datasets (CC BY-NC-SA 4.0).
 
-Expects local clones (never committed):
-  pipeline/data/tennis_atp/   https://github.com/JeffSackmann/tennis_atp
-  pipeline/data/tennis_wta/   https://github.com/JeffSackmann/tennis_wta
+The original GitHub repositories (JeffSackmann/tennis_atp, tennis_wta) were
+removed in 2026; the data comes from an archival mirror with the same files
+and license, downloaded by `deuce-pipeline fetch-sackmann` (never committed):
+  pipeline/data/tennis_atp/   <ARCHIVE_URL>/tree/main/atp
+  pipeline/data/tennis_wta/   <ARCHIVE_URL>/tree/main/wta
 
 Only main-draw tour files (atp_matches_YYYY.csv / wta_matches_YYYY.csv) are
 read; qualifying, challenger, ITF and amateur files are ignored.
@@ -15,10 +17,14 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .wikidata import slugify
+
+ARCHIVE = "Aneeshers/tennis-sackmann-archive"
+ARCHIVE_URL = f"https://huggingface.co/datasets/{ARCHIVE}"
 SOURCE_ID = {"atp": "sackmann_atp", "wta": "sackmann_wta"}
 SOURCE_URL = {
-    "atp": "https://github.com/JeffSackmann/tennis_atp",
-    "wta": "https://github.com/JeffSackmann/tennis_wta",
+    "atp": f"{ARCHIVE_URL}/tree/main/atp",
+    "wta": f"{ARCHIVE_URL}/tree/main/wta",
 }
 
 # tourney_level codes that award a tour title (provisional, see docs/DATA.md).
@@ -27,6 +33,13 @@ TITLE_LEVELS = {
     "wta": {"G", "P", "PM", "I", "T1", "T2", "T3", "T4", "T5", "F"},
 }
 GRAND_SLAM = "G"
+# Grand Slam events by tourney_name (Sackmann spelling, historical names included).
+MAJORS = {
+    "australian_open": ("australian open", "australian chps."),
+    "roland_garros": ("roland garros", "french open"),
+    "wimbledon": ("wimbledon",),
+    "us_open": ("us open", "us national chps."),
+}
 SURFACE_MIN_WINS = 20
 
 
@@ -39,6 +52,7 @@ class PlayerStats:
     titles: int = 0
     grand_slam_titles: int = 0
     grand_slam_finals: int = 0
+    titles_by_major: Counter = field(default_factory=Counter)
     match_wins: int = 0
     match_losses: int = 0
     first_year: int | None = None
@@ -63,7 +77,52 @@ class PlayerStats:
             "match_wins": self.match_wins,
             "match_losses": self.match_losses,
         }
+        for major in MAJORS:
+            rows[f"{major}_titles"] = self.titles_by_major[major]
         return {k: v for k, v in rows.items() if v is not None}
+
+
+def archive_files(listing: dict) -> list[tuple[str, str]]:
+    """(tour, path) of the ATP and WTA files in the archive's API listing."""
+    files = []
+    for sibling in listing.get("siblings", []):
+        path = sibling["rfilename"]
+        tour = path.split("/", 1)[0]
+        if tour in SOURCE_ID and path.endswith((".csv", ".md")):
+            files.append((tour, path))
+    return files
+
+
+def fetch_archive(dest: Path, client, retries: int = 3) -> int:
+    """Downloads the archive into dest/tennis_{atp,wta}/; skips files already there."""
+    listing = client.get(f"https://huggingface.co/api/datasets/{ARCHIVE}").json()
+    downloaded = 0
+    for tour, path in archive_files(listing):
+        out = dest / f"tennis_{tour}" / Path(path).name
+        if out.exists() and out.stat().st_size > 0:
+            continue
+        out.parent.mkdir(parents=True, exist_ok=True)
+        for attempt in range(retries):
+            try:
+                response = client.get(f"{ARCHIVE_URL}/resolve/main/{path}")
+                response.raise_for_status()
+                break
+            except Exception:
+                if attempt == retries - 1:
+                    raise
+        tmp = out.with_suffix(out.suffix + ".part")
+        tmp.write_bytes(response.content)
+        tmp.replace(out)
+        downloaded += 1
+    return downloaded
+
+
+def major_of(tourney_name: str) -> str | None:
+    name = tourney_name.strip().lower()
+    for major, names in MAJORS.items():
+        if name in names:
+            return major
+    return None
 
 
 def read_players(tour_dir: Path, tour: str) -> dict[str, str]:
@@ -75,6 +134,25 @@ def read_players(tour_dir: Path, tour: str) -> dict[str, str]:
             if re.fullmatch(r"Q\d+", qid):
                 mapping[qid] = row["player_id"]
     return mapping
+
+
+def identity_key(name: str, birth: str) -> tuple[str, str]:
+    """("first-last", "YYYYMMDD"), accents and punctuation folded."""
+    return slugify(name), birth
+
+
+def read_identities(tour_dir: Path, tour: str) -> dict[tuple[str, str], str]:
+    """Maps (name, birth date) -> player_id for players without a Wikidata id
+    (recent players often lack one). Ambiguous keys are dropped."""
+    found: dict[tuple[str, str], str | None] = {}
+    with open(tour_dir / f"{tour}_players.csv", newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            dob = (row.get("dob") or "").strip()
+            if (row.get("wikidata_id") or "").strip() or not re.fullmatch(r"\d{8}", dob):
+                continue
+            key = identity_key(f"{row.get('name_first', '')} {row.get('name_last', '')}", dob)
+            found[key] = None if key in found else row["player_id"]
+    return {k: v for k, v in found.items() if v is not None}
 
 
 def compute_stats(tour_dir: Path, tour: str, player_ids: set[str]) -> dict[str, PlayerStats]:
@@ -133,3 +211,6 @@ def _read_matches(tour_dir: Path, tour: str, stats: dict[str, PlayerStats]) -> N
                         s.grand_slam_finals += 1
                         if won:
                             s.grand_slam_titles += 1
+                            major = major_of(row.get("tourney_name") or "")
+                            if major:
+                                s.titles_by_major[major] += 1

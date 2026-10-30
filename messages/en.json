@@ -7,20 +7,37 @@
   "nav": {
     "home": "Home",
     "language": "Language",
-    "switchTo": "Français"
+    "switchTo": "Français",
+    "boosters": "Boosters",
+    "history": "History",
+    "login": "Sign in",
+    "logout": "Sign out",
+    "collection": "Collection",
+    "missions": "Missions",
+    "profile": "Profile",
+    "changelog": "What's new",
+    "open": "Open",
+    "mobile": "Main navigation"
   },
   "home": {
     "metaTitle": "{name} - collectible tennis cards",
     "metaDescription": "Free collectible card game about professional tennis players. One booster every 15 minutes.",
-    "joinDiscord": "Join the Discord"
+    "joinDiscord": "Join the Discord",
+    "play": "Open a booster",
+    "trial": "{count, plural, one {# trial booster} other {# trial boosters}}, no account, no email.",
+    "stats": {
+      "boosters": "boosters opened",
+      "players": "players",
+      "mythic": "top-rarity cards pulled"
+    }
   },
   "rarity": {
-    "common": "Ball kid",
-    "uncommon": "Club player",
-    "rare": "Seeded",
-    "epic": "Runner-up",
-    "legendary": "World No. 1",
-    "mythic": "GOAT"
+    "common": "Unranked",
+    "uncommon": "Tier 4",
+    "rare": "Tier 3",
+    "epic": "Tier 2",
+    "legendary": "Tier 1",
+    "mythic": "Top 100"
   },
   "footer": {
     "fanProject": "Unofficial fan project, not affiliated with the ATP, the WTA, the players or the tournaments.",
@@ -35,5 +52,547 @@
     "title": "Foot fault",
     "body": "This page went out of bounds.",
     "back": "Back to home"
+  },
+  "auth": {
+    "title": "Step onto the court",
+    "subtitle": "Sign in to open your boosters and keep your collection.",
+    "discord": "Continue with Discord",
+    "google": "Continue with Google",
+    "or": "or",
+    "emailLabel": "Email address",
+    "emailSubmit": "Email me a sign-in link",
+    "emailSent": "Link sent. Check your inbox (and spam, no judgment).",
+    "error": "Sign-in failed. Please try again.",
+    "notConfigured": "Sign-in is not configured on this environment yet.",
+    "linkTrial": "You are playing in trial mode: sign in here to keep your cards on this account.",
+    "linkTaken": "This account already exists. Sign in with it (your trial cards will not be transferred) or use another address."
+  },
+  "booster": {
+    "title": "Boosters",
+    "open": "Open a booster",
+    "openBonus": "Open a bonus booster",
+    "opening": "Tearing the wrapper…",
+    "packLabel": "Sealed booster",
+    "revealAll": "Reveal all",
+    "again": "Open the next one",
+    "close": "Back to boosters",
+    "new": "New",
+    "duplicate": "Duplicate",
+    "errors": {
+      "no_booster_available": "Out of boosters. The ball kid will be back soon.",
+      "daily_cap_reached": "Limit reached for this booster.",
+      "insufficient_balance": "Not enough aces for this booster.",
+      "not_authenticated": "Sign in to open a booster.",
+      "unknown": "The booster double-faulted. Please try again.",
+      "daily_already_claimed": "Daily booster already opened. The next one comes tomorrow.",
+      "invalid_pool": "This booster does not exist.",
+      "link_account_required": "End of the trial: link your account to keep your cards and keep playing."
+    },
+    "pullHint": "Pull the lid up, or tap \"Open\".",
+    "counter": "{index}/{total}",
+    "nextCard": "Next card",
+    "goldenBooster": "Golden booster!",
+    "wished": "Wished!",
+    "hintNext": "Tap or swipe for the next one",
+    "keyboardHint": "Space or right arrow: next",
+    "dailyPack": "Daily booster",
+    "dailyKicker": "Daily booster · free",
+    "dailyGuarantee": "One a day, on top of your stock. Last card \"{rarity}\" or better.",
+    "openDaily": "Open the daily booster",
+    "trialNotice": "Trial mode: {count, plural, one {# booster} other {# boosters}} without an account. Link your account to keep your cards and keep playing.",
+    "linkAccount": "Keep my cards",
+    "trialPitch": "Try it right now: open your first boosters without creating an account. You can keep your cards by signing in afterwards.",
+    "haveAccount": "I already have an account",
+    "tryWithoutAccount": "Try without an account",
+    "trialCookie": "A session cookie is created at that point, only to keep your trial cards.",
+    "trialError": "The trial cannot start right now. Try again or sign in.",
+    "moreCards": "+{count}"
+  },
+  "card": {
+    "silhouette": "Photo unavailable",
+    "flag": "Flag: {country}",
+    "number": "#{number}/{total}"
+  },
+  "history": {
+    "title": "Opening history",
+    "empty": "No booster opened yet. The court is waiting.",
+    "openedAt": "Opened on {date}",
+    "source": {
+      "free": "Free",
+      "bonus": "Bonus",
+      "aces": "Aces"
+    }
+  },
+  "dev": {
+    "previewBanner": "Development preview: fictional data, no server call."
+  },
+  "rarityShort": {
+    "common": "UR",
+    "uncommon": "T4",
+    "rare": "T3",
+    "epic": "T2",
+    "legendary": "T1",
+    "mythic": "T100"
+  },
+  "chips": {
+    "stockLabel": "Boosters in stock",
+    "stock": "{stock}/{max} boosters",
+    "full": "stock full",
+    "next": "next in",
+    "bonusLabel": "Bonus boosters",
+    "bonus": "+{count} bonus",
+    "acesLabel": "Aces",
+    "aces": "{count, number} aces",
+    "goldenLabel": "Golden booster",
+    "golden": "{count, plural, one {Golden booster guaranteed next} other {Golden booster guaranteed in #}}",
+    "mythicLabel": "Top-rarity guarantee",
+    "mythic": "{count, plural, one {Top rarity guaranteed next} other {Top rarity guaranteed in #}}"
+  },
+  "pools": {
+    "legend": "Choose your free booster (same stock, same odds)",
+    "all": "All",
+    "men": "Men",
+    "women": "Women"
+  },
+  "dailyThemes": {
+    "australianOpen": "Australians in the spotlight",
+    "claySeason": "Clay season",
+    "rolandGarros": "The French in the spotlight",
+    "grassSeason": "Grass season",
+    "wimbledon": "The British in the spotlight",
+    "usOpen": "Americans in the spotlight",
+    "lefties": "Lefties special",
+    "birthdays": "Happy birthday",
+    "legends": "Legends",
+    "nineties": "Born in the 70s",
+    "women": "Women special",
+    "clayCourters": "Clay specialists",
+    "nextGen": "Next generation"
+  },
+  "shop": {
+    "title": "Shop (aces only)",
+    "subtitle": "No real-money purchase: aces are earned by playing.",
+    "buy": "Buy · {price} aces",
+    "leftToday": "{count, plural, =0 {None left today} one {# left today} other {# left today}}",
+    "leftWeek": "{count, plural, =0 {None left this week} one {# left this week} other {# left this week}}",
+    "aces": {
+      "name": "Aces booster",
+      "description": "A standard booster, 5 cards."
+    },
+    "box": {
+      "name": "Box",
+      "description": "{cards} cards, one of them \"{rarity}\" or better."
+    },
+    "qualifiers": {
+      "name": "Qualifiers",
+      "description": "{cards} cards among lesser-known players. Great to complete albums."
+    }
+  },
+  "summary": {
+    "title": "Your pull",
+    "titleGolden": "Your golden pull",
+    "bestPull": "Best card: {name}",
+    "counts": "{newCards, plural, =0 {No new card} one {# new card} other {# new cards}} · {duplicates, plural, =0 {no duplicate} one {# duplicate} other {# duplicates}}",
+    "duplicateValue": "duplicates worth {aces} aces when recycled",
+    "pity": "rarity guarantee used",
+    "collection": "See the collection",
+    "share": "Share",
+    "copied": "Link copied",
+    "shareTitle": "My pull",
+    "shareError": "Sharing did not work. Try again.",
+    "missions": "Missions"
+  },
+  "collection": {
+    "title": "My collection",
+    "unique": "Unique cards",
+    "completion": "Completion",
+    "duplicates": "Duplicates",
+    "views": "Collection views",
+    "view": {
+      "cards": "Cards",
+      "albums": "Albums"
+    },
+    "collectionsTitle": "Collections",
+    "nationsTitle": "Nation albums",
+    "nationsHelp": "One album per country, broken down by rarity.",
+    "rarityCount": "{code} {owned}/{total}",
+    "search": "Search",
+    "filterLabel": "Show",
+    "filter": {
+      "owned": "Owned",
+      "missing": "Missing",
+      "wished": "Wished",
+      "duplicates": "Duplicates",
+      "all": "All"
+    },
+    "rarityLabel": "Rarity",
+    "allRarities": "All rarities",
+    "apply": "Filter",
+    "reset": "Clear all",
+    "results": "{count, plural, =0 {No card} one {# card} other {# cards}}",
+    "empty": {
+      "owned": "No cards yet. Open a booster!",
+      "missing": "Nothing missing here. Well done!",
+      "wished": "Your wishlist is empty: tap the heart of a missing card.",
+      "duplicates": "No duplicates.",
+      "all": "No card matches."
+    },
+    "pagination": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {pages}",
+    "copies": "×{count}",
+    "wish": "Add to my wishlist",
+    "unwish": "Remove from my wishlist",
+    "inShowcase": "In showcase",
+    "toShowcase": "Showcase",
+    "recycleOneConfirm": "Recycle the duplicates of {name}? One copy is always kept.",
+    "recycleOne": "Recycle",
+    "recycleTitle": "Recycle duplicates",
+    "recycleHelp": "Keeps one copy of each card and turns the rest into aces. Cards above \"{rarity}\" are recycled one at a time.",
+    "recycled": "{copies} duplicates recycled: +{aces} aces.",
+    "recycleButton": "Recycle {copies} duplicates (+{aces} aces)",
+    "nothingToRecycle": "No duplicates to recycle yet.",
+    "errors": {
+      "unknown": "That did not work. Try again.",
+      "already_owned": "You already own this card.",
+      "wishlist_full": "Your wishlist is full (50 cards).",
+      "insufficient_balance": "Not enough aces.",
+      "not_owned": "You do not own this card.",
+      "invalid_showcase": "At most 5 cards in the showcase.",
+      "nothing_to_recycle": "Nothing to recycle.",
+      "link_account_required": "Link your account to use this."
+    },
+    "open": "View {name} up close",
+    "sortLabel": "Sort by",
+    "sort": {
+      "rarity": "Rarity",
+      "recent": "Recently obtained",
+      "number": "Number",
+      "name": "Name",
+      "youngest": "Youngest",
+      "oldest": "Oldest",
+      "country": "Country"
+    }
+  },
+  "collections": {
+    "bigThree": "Big Three",
+    "rolandGarrosChampions": "Roland-Garros champions",
+    "worldNumberOnes": "World No. 1s",
+    "grandSlamChampions": "Grand Slam champions"
+  },
+  "missions": {
+    "title": "Missions",
+    "subtitle": "Come back every day: the login streak, daily missions and achievements give aces and bonus boosters.",
+    "anonymous": "Missions and the login streak are for linked accounts.",
+    "linkAccount": "Link my account",
+    "claimAll": "{count, plural, =0 {Nothing to collect} one {Collect all (#)} other {Collect all (#)}}",
+    "claimed": "Collected: +{aces} aces{boosters, plural, =0 {} one { and # bonus booster} other { and # bonus boosters}}.",
+    "streakTitle": "Login streak",
+    "streakHelp": "One missed day is tolerated each week ({grace} left).",
+    "streakClaimed": "Collected today",
+    "streakClaim": "Day {day}: collect {aces} aces",
+    "day": "D{day}",
+    "aces": "{count, number} aces",
+    "plusBoosters": "+{count} bonus booster",
+    "welcomeTitle": "First steps",
+    "welcomeBonus": "All done: +{count} bonus boosters.",
+    "dailyTitle": "Daily missions",
+    "dailyBonus": "All 3 collected: +{count} bonus booster. New missions at midnight (Paris time).",
+    "dailyBonusClaimed": "Daily bonus collected. New missions at midnight (Paris time).",
+    "achievementsTitle": "Achievements",
+    "achievementsCount": "{done}/{total} earned",
+    "done": "Collected",
+    "claim": "Collect",
+    "inProgress": "In progress",
+    "errors": {
+      "unknown": "That did not work. Try again.",
+      "nothing_to_claim": "Nothing to collect yet.",
+      "already_claimed": "Already collected today.",
+      "link_account_required": "Link your account to collect your rewards."
+    }
+  },
+  "quests": {
+    "welcome": {
+      "firstBooster": {
+        "title": "Open your first booster"
+      },
+      "recycle": {
+        "title": "Recycle a duplicate",
+        "hint": "Collection > Recycle duplicates"
+      },
+      "wishlist": {
+        "title": "Add {target} cards to your wishlist",
+        "hint": "Collection > Missing > heart"
+      },
+      "username": {
+        "title": "Choose your username",
+        "hint": "Profile"
+      },
+      "showcase": {
+        "title": "Put a card in your showcase",
+        "hint": "Collection > Showcase"
+      }
+    },
+    "daily": {
+      "open3": {
+        "title": "Open {target} boosters"
+      },
+      "open8": {
+        "title": "Open {target} boosters"
+      },
+      "rare1": {
+        "title": "Pull a \"{rare}\" card or better"
+      },
+      "rare3": {
+        "title": "Pull {target} \"{rare}\" cards or better"
+      },
+      "lefty": {
+        "title": "Pull a left-handed player"
+      },
+      "new5": {
+        "title": "Get {target} new cards"
+      },
+      "daily": {
+        "title": "Open the daily booster"
+      }
+    },
+    "achievement": {
+      "firstServe": {
+        "title": "First serve",
+        "hint": "Open 1 booster"
+      },
+      "loveGame": {
+        "title": "Love game",
+        "hint": "Open 10 boosters"
+      },
+      "tieBreak": {
+        "title": "Tie-break",
+        "hint": "Open 100 boosters"
+      },
+      "fiveSets": {
+        "title": "Five sets",
+        "hint": "Open 1,000 boosters"
+      },
+      "goOutside": {
+        "title": "Go play outside, it's sunny",
+        "hint": "Open 10,000 boosters"
+      },
+      "collector50": {
+        "title": "Ball kid",
+        "hint": "Own 50 different cards"
+      },
+      "collector250": {
+        "title": "Seeded",
+        "hint": "Own 250 different cards"
+      },
+      "collector1000": {
+        "title": "Tennis encyclopedia",
+        "hint": "Own 1,000 different cards"
+      },
+      "firstSlam": {
+        "title": "First big title",
+        "hint": "Get a \"{legendary}\" card or better"
+      },
+      "goldenSlam": {
+        "title": "The summit",
+        "hint": "Get a \"{mythic}\" card"
+      },
+      "bigThree": {
+        "title": "Big Three",
+        "hint": "Complete the Big Three collection"
+      },
+      "careerSlam": {
+        "title": "Career Grand Slam",
+        "hint": "Own a champion of each of the 4 Grand Slam events"
+      },
+      "album1": {
+        "title": "First album",
+        "hint": "Complete a nation album"
+      },
+      "album10": {
+        "title": "World tour",
+        "hint": "Complete 10 nation albums"
+      }
+    }
+  },
+  "profile": {
+    "title": "My profile",
+    "summary": "{owned} cards out of {total}",
+    "viewPublic": "See my public profile",
+    "anonymous": "You are playing in trial mode. Link your account (Discord, Google or email) to keep your cards.",
+    "linkAccount": "Link my account",
+    "showcaseTitle": "Showcase",
+    "showcaseEmpty": "Your showcase is empty: pick up to 5 cards in your collection.",
+    "showcaseEdit": "Edit from the collection",
+    "identityTitle": "Username",
+    "username": "Username (3 to 20 characters: letters, digits, _)",
+    "save": "Save",
+    "usernameSaved": "Username saved.",
+    "usernameHelp": "Shown on your public profile and in the big pulls feed.",
+    "privacyTitle": "Privacy",
+    "showInFeed": "Show my username in the big pulls feed",
+    "publicProfile": "Public profile (showcase and progress)",
+    "saved": "Saved.",
+    "errors": {
+      "unknown": "That did not work. Try again.",
+      "invalid_username": "Invalid username: 3 to 20 letters, digits or _.",
+      "username_taken": "This username is taken."
+    }
+  },
+  "badges": {
+    "recruiter": "Recruiter",
+    "ambassador": "Ambassador"
+  },
+  "referral": {
+    "title": "Referral",
+    "pitch": "Invite your friends: +{referrer} boosters for you and +{referee} for them, once they have played a little.",
+    "shareTitle": "Come collect tennis cards with me",
+    "share": "Share my link",
+    "copied": "Link copied",
+    "progress": "{rewarded, plural, =0 {No friend validated} one {# friend validated} other {# friends validated}} · {pending} pending",
+    "milestone": "{referrals} friends: +{boosters} boosters",
+    "rules": "A friend counts once their account is confirmed and after a few boosters. Duplicate accounts do not count.",
+    "invitedBy": "Code of the person who invited you",
+    "claim": "Confirm",
+    "claimed": "Thanks! Your referrer will be rewarded once you have played a little.",
+    "status": {
+      "pending": "Referral pending: keep playing.",
+      "qualified": "Referral validated.",
+      "rewarded": "Referral validated, boosters credited.",
+      "rejected": "Referral refused."
+    },
+    "errors": {
+      "unknown": "That did not work. Try again.",
+      "invalid_referral_code": "Unknown code.",
+      "already_referred": "You already have a referrer.",
+      "referral_too_late": "Referrals must be declared within 7 days of signing up."
+    }
+  },
+  "push": {
+    "title": "Notifications",
+    "unsupported": "Notifications are not available on this device or browser.",
+    "help": "A reminder when your booster stock is full, and in the evening if your login streak is about to end. Nothing else.",
+    "enable": "Turn on for this device",
+    "disable": "Turn off for this device",
+    "stockFull": "Booster stock full",
+    "streak": "Login streak about to end",
+    "error": "This setting could not be saved.",
+    "denied": "Notifications are blocked in the browser settings.",
+    "notifications": {
+      "stockFullTitle": "{name}: stock full",
+      "stockFullBody": "Your 10 boosters are waiting. No more refills until you open some.",
+      "streakTitle": "Your streak ends tonight",
+      "streakBody": "Sign in before midnight to keep your streak (day {day})."
+    }
+  },
+  "player": {
+    "metaTitle": "{username}'s collection",
+    "progress": "{owned} cards out of {total}",
+    "showcase": "Showcase",
+    "emptyShowcase": "No card in the showcase yet."
+  },
+  "share": {
+    "title": "A shared pull",
+    "metaTitle": "I pulled {name}!",
+    "metaDescription": "Collectible tennis cards, free, one booster every 15 minutes.",
+    "byPlayer": "{username}'s pull",
+    "golden": "Golden booster",
+    "cta": "Open my boosters"
+  },
+  "feed": {
+    "label": "Latest big pulls",
+    "by": "by {username}",
+    "anonymous": "by a player"
+  },
+  "changelog": {
+    "title": "What's new",
+    "subtitle": "What changes in the game, newest first.",
+    "entries": {
+      "2026-10-29": {
+        "title": "Brand new cards and tube",
+        "items": {
+          "cards": "Redesigned cards: metal frame, aura and holo sheen growing with the rarity.",
+          "back": "Click a card to see it up close, tilt it and flip it: statistics, career, biography and credits are on the back.",
+          "sort": "Collection sortable by rarity, date obtained, number, name, age or country.",
+          "reveal": "The rarest cards come out last, with a burst of light in their color.",
+          "tube": "New ball tube: clear plastic, felt balls, glossy label.",
+          "catalog": "Only players with a photo, and many more tour players.",
+          "grading": "Grading removed for now.",
+          "transition": "A more spectacular opening: the tube trembles, a beam of light shoots out, the cards fly toward you and land one by one in the stack."
+        }
+      },
+      "2026-10-26": {
+        "title": "Golden boosters, missions and collection",
+        "items": {
+          "reveal": "New opening: cards come out face up, stacked. Their halo hints at a pair of rarities, and their frame shows the exact rarity once on top. Spin the tube with your mouse or finger.",
+          "photos": "Photos framed on the face, and taken during their career for retired players.",
+          "golden": "Golden booster: about one booster in 20, guaranteed by the 30th at the latest. Its last card is better.",
+          "pity": "Top rarity guaranteed by the 300th booster at the latest, with a visible counter.",
+          "daily": "Free daily booster, with a theme that follows the tennis calendar.",
+          "pools": "Choice of free booster: All, Men or Women.",
+          "shop": "Aces shop: 20-card Box and Qualifiers.",
+          "collection": "Collection page: nation albums, collections, wishlist, one-click recycling, grading.",
+          "missions": "Missions: 7-day login streak, daily missions, first steps and achievements.",
+          "social": "Public profile with a showcase, shared pulls, big pulls feed, referral.",
+          "trial": "Trial without an account: two boosters before signing up."
+        }
+      }
+    }
+  },
+  "viewer": {
+    "label": "{name}'s card",
+    "close": "Close",
+    "previous": "Previous card",
+    "next": "Next card",
+    "showBack": "Flip the card",
+    "showFront": "Show the front",
+    "hint": "← → to change cards · F to flip · Esc to close"
+  },
+  "cardBack": {
+    "loading": "Loading…",
+    "locked": "Get this card to discover its back: statistics, career and biography.",
+    "born": "Born",
+    "age": "{age} years old",
+    "plays": "Plays",
+    "hand": {
+      "right": "Right-handed",
+      "left": "Left-handed"
+    },
+    "height": "Height",
+    "career": "Career",
+    "since": "Since {year}",
+    "surface": "Favourite surface",
+    "surfaces": {
+      "hard": "Hard",
+      "clay": "Clay",
+      "grass": "Grass",
+      "carpet": "Carpet"
+    },
+    "bestRank": "Best ranking",
+    "titles": "Titles",
+    "slams": "Grand Slams",
+    "record": "Win–loss",
+    "slamFinals": "Slam finals",
+    "weeksNo1": "Weeks at No. 1",
+    "slam": {
+      "australian_open_titles": "{count} × Australian Open",
+      "roland_garros_titles": "{count} × Roland-Garros",
+      "wimbledon_titles": "{count} × Wimbledon",
+      "us_open_titles": "{count} × US Open"
+    },
+    "readMore": "Read on Wikipedia",
+    "photoCredit": "Photo: {author}, {license}",
+    "statsCredit": "Statistics: {source}, {license}",
+    "textCredit": "Text: Wikipedia, {license}"
+  },
+  "grading": {
+    "labels": {
+      "6": "Good",
+      "7": "Very good",
+      "8": "Excellent",
+      "9": "Near mint",
+      "10": "Mint"
+    }
   }
 }
