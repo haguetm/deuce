@@ -258,6 +258,62 @@ function glowTexture(): CanvasTexture {
   return new CanvasTexture(canvas);
 }
 
+/** Back of a card: night blue, gold frame, wordmark and a ball. */
+function cardBackTexture(options: TubeSceneOptions): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 358;
+  const ctx = canvas.getContext("2d")!;
+  const { gold, ball, cream, pack } = options.colors;
+  const bg = ctx.createLinearGradient(0, 0, 256, 358);
+  bg.addColorStop(0, shade(pack, -0.05));
+  bg.addColorStop(1, shade(pack, -0.38));
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 256, 358);
+  ctx.strokeStyle = gold;
+  ctx.lineWidth = 10;
+  ctx.strokeRect(9, 9, 238, 340);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(22, 22, 212, 314);
+  ctx.fillStyle = ball;
+  ctx.beginPath();
+  ctx.arc(128, 150, 42, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(92, 150, 34, -0.9, 0.9);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(164, 150, 34, Math.PI - 0.9, Math.PI + 0.9);
+  ctx.stroke();
+  ctx.fillStyle = cream;
+  ctx.textAlign = "center";
+  ctx.font = `900 34px ${options.font}`;
+  ctx.fillText(options.wordmark.split("").join(" "), 128, 250);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+/** Vertical fade, opaque at the bottom: the light beam out of the tube. */
+function beamTexture(): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 4;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, 0, 256);
+  g.addColorStop(0, "rgba(255,255,255,0)");
+  g.addColorStop(0.6, "rgba(255,255,255,0.35)");
+  g.addColorStop(1, "rgba(255,255,255,1)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 4, 256);
+  return new CanvasTexture(canvas);
+}
+
+/** Cards out of the tube, fanned. */
+const CARD_COUNT = 5;
+
 export function createTubeScene(
   canvas: HTMLCanvasElement,
   options: TubeSceneOptions,
@@ -462,33 +518,55 @@ export function createTubeScene(
   ring.position.set(0, 0.03, RADIUS * 1.98 + 0.08);
   sealPivot.add(ring);
 
-  // Cards inside, rising at the end.
+  // Cards inside, shown from the back: they rise, fan out and fly toward
+  // the player at the end, handing over to the card stack of the page.
   const cards = new Group();
+  const backMap = cardBackTexture(options);
   const cardMaterial = new MeshStandardMaterial({
-    color: options.colors.emerald,
-    metalness: 0.1,
-    roughness: 0.6,
+    map: backMap,
+    metalness: 0.2,
+    roughness: 0.45,
+    emissive: new Color(0xffffff),
+    emissiveIntensity: 0.08,
   });
   const edgeMaterial = new MeshStandardMaterial({
     color: options.colors.gold,
-    metalness: 0.6,
-    roughness: 0.4,
+    metalness: 0.7,
+    roughness: 0.3,
   });
-  for (let i = 0; i < 3; i++) {
-    const card = new Mesh(new BoxGeometry(1.0, 1.4, 0.02), [
-      edgeMaterial,
-      edgeMaterial,
-      edgeMaterial,
-      edgeMaterial,
-      cardMaterial,
-      cardMaterial,
-    ]);
-    card.position.set(i * 0.05, 0, i * 0.04 - 0.04);
-    cards.add(card);
+  const cardGeometry = new BoxGeometry(1.0, 1.4, 0.02);
+  for (let i = 0; i < CARD_COUNT; i++) {
+    cards.add(
+      new Mesh(cardGeometry, [
+        edgeMaterial,
+        edgeMaterial,
+        edgeMaterial,
+        edgeMaterial,
+        cardMaterial,
+        cardMaterial,
+      ]),
+    );
   }
-  cards.position.y = 0.4;
   cards.visible = false;
   tube.add(cards);
+
+  // Light beam shooting up when the seal pops.
+  const beamMap = beamTexture();
+  const beamMaterial = new MeshBasicMaterial({
+    map: beamMap,
+    color: new Color(options.colors.ball).lerp(new Color(0xffffff), 0.3),
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    side: DoubleSide,
+    blending: AdditiveBlending,
+  });
+  const beam = new Mesh(
+    new CylinderGeometry(RADIUS * 1.9, RADIUS * 0.9, 5, 48, 1, true),
+    beamMaterial,
+  );
+  beam.position.y = TOP + 2.5;
+  tube.add(beam);
 
   // Particles: air puff (and gold sparkles for a golden booster).
   const makeParticles = (count: number, color: string, size: number) => {
@@ -681,13 +759,17 @@ export function createTubeScene(
       const target = Math.round(tube.rotation.y / (Math.PI * 2)) * Math.PI * 2;
       tube.rotation.y += (target - tube.rotation.y) * Math.min(1, dt * 6);
     }
-    // Floats gently; the halo breathes, the stars turn and twinkle.
+    // Floats gently; the halo breathes, the stars turn and twinkle. While
+    // the server answers, the tube trembles: something is coming.
     tube.position.y = 0.08 * Math.sin(now / 650);
+    const shaking = stage.name === "waiting" || stage.name === "pulling";
+    tube.position.x = shaking ? 0.025 * Math.sin(now / 21) : 0;
     haloMaterial.opacity = 0.75 + 0.2 * Math.sin(now / 500);
     stars.rotation.y += dt * 0.25;
     starMaterial.opacity = 0.55 + 0.35 * Math.sin(now / 280);
     tube.rotation.x += (tilt.y * 0.14 - tube.rotation.x) * Math.min(1, dt * 4);
     tube.rotation.z += (-tilt.x * 0.14 - tube.rotation.z) * Math.min(1, dt * 4);
+    if (shaking) tube.rotation.z += 0.012 * Math.sin(now / 17);
 
     switch (stage.name) {
       case "rest":
@@ -733,14 +815,34 @@ export function createTubeScene(
           sealPivot.position.y = TOP + 0.05 + 1.5 * ease(puffT);
           aluminium.opacity = 1 - ease(puffT);
           animateParticles(puff, puffT);
-          // The halo flares as the seal pops.
+          // The halo flares and a beam of light shoots out as the seal pops.
           const flare = 1 + 0.5 * Math.sin(Math.min(puffT, 1) * Math.PI);
           halo.scale.set(3.4 * flare, 5.6 * flare, 1);
+          beamMaterial.opacity = ease(puffT);
+          beam.scale.set(1, 0.3 + 0.7 * ease(puffT), 1);
+          beam.position.y = TOP + 2.5 * beam.scale.y;
         }
         const riseT = (elapsed - goldMs - TUBE_TIMING.puff) / TUBE_TIMING.rise;
         if (riseT >= 0) {
           cards.visible = true;
-          cards.position.y = 0.4 + 3.4 * ease(riseT);
+          // Each card a little after the previous one: up out of the tube,
+          // fanned, then toward the player, growing as the light fills in.
+          cards.children.forEach((card, i) => {
+            const t = Math.min(Math.max(riseT * 1.3 - i * 0.075, 0), 1);
+            const up = ease(Math.min(t / 0.55, 1));
+            const out = ease(Math.max((t - 0.45) / 0.55, 0));
+            const spread = i - (CARD_COUNT - 1) / 2;
+            card.position.set(
+              spread * 0.42 * up * (1 - out * 0.6),
+              0.3 + 2.9 * up - 1.2 * out,
+              i * 0.03 + 6.5 * out,
+            );
+            card.rotation.set(-0.25 * out, 0, -spread * 0.16 * up * (1 - out));
+            card.scale.setScalar(1 + 0.6 * out);
+          });
+          const glow = ease(riseT);
+          halo.scale.set(3.4 * (1 + glow), 5.6 * (1 + glow), 1);
+          haloMaterial.opacity = 0.9 + 0.1 * glow;
         }
         if (riseT >= 1) {
           stage = { name: "out" };
@@ -808,6 +910,8 @@ export function createTubeScene(
         environment,
         glow,
         ballMap,
+        backMap,
+        beamMap,
       ]);
       const materials = new Set<Material>();
       scene.traverse((object: Object3D) => {

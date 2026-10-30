@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RARITIES, type Rarity } from "@config/game";
 import { useTranslations } from "next-intl";
 import { CardFront } from "@/components/card/card-front";
@@ -9,6 +9,9 @@ import type { DrawnCard } from "@/lib/game/types";
 
 /** Offset between two stacked cards, in px. */
 const STEP = 8;
+/** Cards dealt into the stack when it appears: delay between two, duration of one (ms). */
+const DEAL_STAGGER = 110;
+const DEAL_DURATION = 560;
 
 /**
  * The cards out of the tube, face up and stacked. Card `cursor` is on top
@@ -42,9 +45,29 @@ export function RevealStack({
   // The card that just left stays mounted to play its slide-out transition.
   const shown = cursor > 0 ? [cursor - 1, ...visible] : visible;
   const stage = useRef<HTMLButtonElement>(null);
+  // Arrival from the tube: a flash, then the cards dealt into the stack from
+  // below, deepest first. The top card shows its rarity once it has landed.
+  const [dealing, setDealing] = useState(
+    () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  const dealCount = shown.length;
+  useEffect(() => {
+    if (!dealing) return;
+    const id = window.setTimeout(
+      () => setDealing(false),
+      (dealCount - 1) * DEAL_STAGGER + DEAL_DURATION,
+    );
+    return () => window.clearTimeout(id);
+    // Only once, when the stack appears.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    stage.current?.focus();
+    stage.current?.focus({ preventScroll: true });
+    stage.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const onControl =
         document.activeElement instanceof HTMLButtonElement ||
@@ -64,6 +87,17 @@ export function RevealStack({
 
   return (
     <section className="flex w-full flex-col items-center gap-4">
+      {dealing && (
+        <div
+          className="reveal-flash"
+          style={{
+            ["--flash" as string]: golden
+              ? "var(--brand-gold)"
+              : "var(--brand-ball)",
+          }}
+          aria-hidden="true"
+        />
+      )}
       {golden && cursor === 0 && (
         <p className="golden-banner rounded-full border border-gold px-4 py-1 text-sm font-semibold uppercase tracking-[0.2em] text-gold">
           {t("goldenBooster")}
@@ -76,7 +110,7 @@ export function RevealStack({
       <button
         ref={stage}
         type="button"
-        onClick={onAdvance}
+        onClick={() => !dealing && onAdvance()}
         aria-label={t("nextCard")}
         className="stack relative w-60 sm:w-72"
         style={{
@@ -84,22 +118,24 @@ export function RevealStack({
           marginBottom: `${(Math.min(cards.length, 6) - 1) * STEP}px`,
         }}
       >
-        {top && <PullBurst key={top.slot} rarity={top.rarity} />}
+        {top && !dealing && <PullBurst key={top.slot} rarity={top.rarity} />}
         {/* Sizing ghost: the stack takes the height of one card. */}
         <span className="block aspect-[5/7] w-full" aria-hidden="true" />
         {shown
           .slice()
           .reverse()
-          .map((index) => {
+          .map((index, order) => {
             const card = cards[index];
             const depth = index - cursor;
             const isTop = depth === 0;
             const gone = depth < 0;
+            const landed = isTop && !dealing;
             return (
               <div
                 key={card.slot}
-                className={`stack-card glow-${glowTier(card.rarity)} absolute inset-0 rounded-[0.9rem] ${gone ? "stack-gone" : ""} ${isTop ? `stack-top pull-${pullLevel(card.rarity)}` : ""}`}
+                className={`stack-card glow-${glowTier(card.rarity)} absolute inset-0 rounded-[0.9rem] ${gone ? "stack-gone" : ""} ${landed ? `stack-top pull-${pullLevel(card.rarity)}` : ""} ${dealing ? "stack-deal" : ""}`}
                 style={{
+                  ["--deal-delay" as string]: `${order * DEAL_STAGGER}ms`,
                   zIndex: 100 - depth,
                   transform: gone
                     ? undefined
@@ -112,13 +148,13 @@ export function RevealStack({
                   countryCode={card.country_code}
                   rarity={card.rarity}
                   image={card.image}
-                  concealed={!isTop && !gone}
+                  concealed={!landed && !gone}
                   badge={card.was_new ? t("new") : t("duplicate")}
                   highlight={card.was_wished ? t("wished") : undefined}
                   catalogNumber={card.catalog_number}
                   catalogSize={catalogSize}
                 />
-                {isTop && (
+                {landed && (
                   <span
                     key={`frame-${card.slot}`}
                     className={`frame-draw ${isUpperOfPair(card.rarity) ? "frame-shine" : ""}`}
@@ -139,7 +175,7 @@ export function RevealStack({
       </button>
 
       <div className="min-h-14 text-center" aria-live="polite">
-        {top && (
+        {top && !dealing && (
           <>
             <p
               className="text-sm font-semibold uppercase tracking-widest"

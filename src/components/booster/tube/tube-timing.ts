@@ -6,8 +6,8 @@ export const TUBE_TIMING = {
   golden: 500,
   /** Seal torn off, air puff. */
   puff: 400,
-  /** Cards rising out of the tube. */
-  rise: 500,
+  /** Cards rising out of the tube, fanning and flying toward the player. */
+  rise: 800,
   /** Whole exit in reduced-motion mode (fades only). */
   reduced: 300,
 } as const;
